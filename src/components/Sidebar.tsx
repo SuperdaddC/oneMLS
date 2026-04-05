@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 interface NavItem {
   label: string;
@@ -237,6 +240,23 @@ function Badge({ text, type }: { text: string; type: "count" | "soon" }) {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
+  const userName = user?.user_metadata?.first_name || user?.email?.split("@")[0] || "User";
+  const userInitial = userName.charAt(0).toUpperCase();
+  const userPlan = user?.user_metadata?.role === "fsbo" ? "FSBO Seller" : "Free Account";
 
   const isActive = (href: string) => {
     if (href === "#") return false;
@@ -352,14 +372,32 @@ export default function Sidebar() {
           >
             MY ACCOUNT
           </div>
-          {accountItems.map((item) => (
-            <Link key={item.label} href={item.href} style={linkStyle(item.href)}>
-              <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-                {item.icon}
-              </span>
-              <span style={{ flex: 1 }}>{item.label}</span>
-            </Link>
-          ))}
+          {accountItems.map((item) =>
+            item.label === "Logout" ? (
+              <button
+                key={item.label}
+                onClick={handleLogout}
+                style={{
+                  ...linkStyle("#"),
+                  border: "none",
+                  width: "100%",
+                  textAlign: "left",
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+                  {item.icon}
+                </span>
+                <span style={{ flex: 1 }}>{item.label}</span>
+              </button>
+            ) : (
+              <Link key={item.label} href={item.href} style={linkStyle(item.href)}>
+                <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+                  {item.icon}
+                </span>
+                <span style={{ flex: 1 }}>{item.label}</span>
+              </Link>
+            )
+          )}
         </div>
       </nav>
 
@@ -389,7 +427,7 @@ export default function Sidebar() {
             textTransform: "uppercase",
           }}
         >
-          l
+          {userInitial}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
@@ -400,7 +438,7 @@ export default function Sidebar() {
               lineHeight: 1.3,
             }}
           >
-            larry
+            {userName}
           </div>
           <div
             style={{
@@ -409,7 +447,7 @@ export default function Sidebar() {
               lineHeight: 1.3,
             }}
           >
-            Free Account
+            {userPlan}
           </div>
         </div>
         <button

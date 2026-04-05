@@ -2,18 +2,35 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    // Simulate auth delay then redirect
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 400);
+    setError(null);
+
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
+    }
+
+    router.push("/dashboard");
+    router.refresh();
   }
 
   return (
@@ -36,21 +53,39 @@ export default function LoginPage() {
           </svg>
         </div>
 
-        <h1>HomeStar Properties</h1>
+        <h1>OneMLS</h1>
         <p className="login-subtitle">Agent Portal Login</p>
+
+        {error && (
+          <div
+            style={{
+              background: "rgba(239, 68, 68, 0.1)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              borderRadius: "0.5rem",
+              padding: "0.75rem 1rem",
+              marginBottom: "1rem",
+              color: "#f87171",
+              fontSize: "0.875rem",
+            }}
+          >
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="login-user" className="form-label">
-              Username or Email
+              Email
             </label>
             <input
               id="login-user"
-              type="text"
+              type="email"
               className="form-input"
-              placeholder="Enter your username or email"
-              autoComplete="username"
+              placeholder="Enter your email"
+              autoComplete="email"
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
@@ -65,6 +100,8 @@ export default function LoginPage() {
               placeholder="Enter your password"
               autoComplete="current-password"
               required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
@@ -104,6 +141,20 @@ export default function LoginPage() {
           <a href="#" style={{ color: "var(--accent)", textDecoration: "none" }}>
             Reset it here
           </a>
+        </p>
+
+        <p
+          style={{
+            textAlign: "center",
+            marginTop: "0.75rem",
+            fontSize: "0.875rem",
+            color: "var(--muted)",
+          }}
+        >
+          Don&apos;t have an account?{" "}
+          <Link href="/register" style={{ color: "var(--accent)", textDecoration: "none" }}>
+            Register
+          </Link>
         </p>
       </div>
     </div>
