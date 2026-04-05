@@ -1,26 +1,726 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* =============================================
+   HomeStar Properties / OneMLS Agent Portal
+   Luxury Dark Theme
+   ============================================= */
 
+/* --- Theme tokens (Tailwind v4 inline theme) --- */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-border: var(--border-color);
+  --color-muted: var(--muted);
+
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* --- Dark mode (default) --- */
+:root {
+  --background: #0a0a0f;
+  --foreground: #f8fafc;
+  --surface: #161620;
+  --surface-hover: #1e1e2e;
+  --sidebar: #0f172a;
+  --sidebar-hover: #1a2744;
+  --primary: #1e3a5f;
+  --primary-light: #2a4f7f;
+  --accent: #c9a962;
+  --accent-hover: #d4b872;
+  --border-color: #2a2a3a;
+  --muted: #94a3b8;
+
+  /* Status colors */
+  --status-active: #22c55e;
+  --status-active-bg: rgba(34, 197, 94, 0.12);
+  --status-pending: #f59e0b;
+  --status-pending-bg: rgba(245, 158, 11, 0.12);
+  --status-sold: #64748b;
+  --status-sold-bg: rgba(100, 116, 139, 0.12);
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --header-height: 64px;
+
+  color-scheme: dark;
 }
 
+/* --- Light mode variant --- */
+.light,
+[data-theme="light"] {
+  --background: #f1f5f9;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-hover: #f8fafc;
+  --sidebar: #1e293b;
+  --sidebar-hover: #334155;
+  --primary: #1e3a5f;
+  --primary-light: #2a4f7f;
+  --accent: #b8962e;
+  --accent-hover: #c9a962;
+  --border-color: #e2e8f0;
+  --muted: #64748b;
+
+  --status-active: #16a34a;
+  --status-active-bg: rgba(22, 163, 74, 0.1);
+  --status-pending: #d97706;
+  --status-pending-bg: rgba(217, 119, 6, 0.1);
+  --status-sold: #475569;
+  --status-sold-bg: rgba(71, 85, 105, 0.1);
+
+  color-scheme: light;
+}
+
+/* --- Base styles --- */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* =============================================
+   LAYOUT: Sidebar + Header
+   ============================================= */
+
+.portal-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  z-index: 40;
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+}
+
+.portal-sidebar-logo {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.portal-sidebar-nav a,
+.portal-sidebar-nav button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  border: none;
+  background: none;
+  width: 100%;
+  cursor: pointer;
+}
+
+.portal-sidebar-nav a:hover,
+.portal-sidebar-nav button:hover {
+  background: var(--sidebar-hover);
+  color: #f8fafc;
+}
+
+.portal-sidebar-nav a.active,
+.portal-sidebar-nav button.active {
+  background: var(--primary);
+  color: var(--accent);
+}
+
+.portal-header {
+  position: sticky;
+  top: 0;
+  height: var(--header-height);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  z-index: 30;
+  margin-left: var(--sidebar-width);
+}
+
+.portal-main {
+  margin-left: var(--sidebar-width);
+  min-height: calc(100vh - var(--header-height));
+  padding: 1.5rem;
+}
+
+/* Mobile sidebar */
+@media (max-width: 1023px) {
+  .portal-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .portal-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .portal-header,
+  .portal-main {
+    margin-left: 0;
+  }
+}
+
+/* =============================================
+   STAT CARDS with flip animation
+   ============================================= */
+
+.stat-card {
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.stat-card-inner {
+  position: relative;
+  width: 100%;
+  min-height: 140px;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.stat-card:hover .stat-card-inner,
+.stat-card.flipped .stat-card-inner {
+  transform: rotateY(180deg);
+}
+
+.stat-card-front,
+.stat-card-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+}
+
+.stat-card-back {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.2;
+}
+
+.stat-card-label {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.stat-card-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: var(--accent);
+}
+
+/* =============================================
+   PROPERTY CARDS
+   ============================================= */
+
+.property-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.property-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.property-card-image {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--primary);
+}
+
+.property-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.property-card-body {
+  padding: 1rem;
+}
+
+.property-card-price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.property-card-address {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.property-card-details {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* =============================================
+   TABLES
+   ============================================= */
+
+.portal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.portal-table thead {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.portal-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.portal-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.portal-table tbody tr {
+  transition: background 0.15s;
+}
+
+.portal-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+/* =============================================
+   FORMS
+   ============================================= */
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+  margin-bottom: 0.375rem;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.15);
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--muted);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* =============================================
+   BUTTONS
+   ============================================= */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #f8fafc;
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background: var(--primary-light);
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: #0f172a;
+  border-color: var(--accent);
+}
+
+.btn-accent:hover {
+  background: var(--accent-hover);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--foreground);
+  border-color: var(--border-color);
+}
+
+.btn-outline:hover {
+  background: var(--surface-hover);
+  border-color: var(--muted);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border-color: transparent;
+}
+
+.btn-ghost:hover {
+  color: var(--foreground);
+  background: var(--surface-hover);
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+/* =============================================
+   BADGES (Status)
+   ============================================= */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+.badge-active {
+  color: var(--status-active);
+  background: var(--status-active-bg);
+}
+
+.badge-pending {
+  color: var(--status-pending);
+  background: var(--status-pending-bg);
+}
+
+.badge-sold {
+  color: var(--status-sold);
+  background: var(--status-sold-bg);
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.badge-active .badge-dot {
+  background: var(--status-active);
+}
+
+.badge-pending .badge-dot {
+  background: var(--status-pending);
+}
+
+.badge-sold .badge-dot {
+  background: var(--status-sold);
+}
+
+/* =============================================
+   CALENDAR GRID
+   ============================================= */
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: var(--border-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.calendar-header-cell {
+  background: var(--surface);
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.calendar-cell {
+  background: var(--background);
+  padding: 0.5rem;
+  min-height: 80px;
+  font-size: 0.8125rem;
+  transition: background 0.15s;
+}
+
+.calendar-cell:hover {
+  background: var(--surface-hover);
+}
+
+.calendar-cell-today {
+  background: var(--surface);
+}
+
+.calendar-cell-number {
+  font-weight: 500;
+  color: var(--foreground);
+  margin-bottom: 0.25rem;
+}
+
+.calendar-cell-number.today {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #0f172a;
+}
+
+.calendar-cell-outside {
+  color: var(--muted);
+  opacity: 0.4;
+}
+
+.calendar-event {
+  display: block;
+  padding: 0.125rem 0.375rem;
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: rgba(201, 169, 98, 0.15);
+  color: var(--accent);
+}
+
+/* =============================================
+   CARD / PANEL generic
+   ============================================= */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.card-body {
+  padding: 1.25rem;
+}
+
+/* =============================================
+   LOGIN PAGE
+   ============================================= */
+
+.login-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+  padding: 1rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.login-card h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.login-card .login-subtitle {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin-bottom: 1.75rem;
+}
+
+.login-card .login-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  color: var(--accent);
+}
+
+/* =============================================
+   UTILITY / MISC
+   ============================================= */
+
+.text-accent {
+  color: var(--accent);
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+.bg-surface {
+  background: var(--surface);
+}
+
+.border-portal {
+  border-color: var(--border-color);
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Pulse dot for notifications */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
 }
