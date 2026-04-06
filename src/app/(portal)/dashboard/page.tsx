@@ -1,80 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase";
+import type { Property as DbProperty, Showing } from "@/lib/types";
 
 // --- Types ---
 interface StatCard {
   front: { label: string; value: string | number; subtitle: string; color: string };
   back: { label: string; value: string | number; subtitle: string; color: string };
 }
-
-interface Property {
-  id: number;
-  status: "ACTIVE" | "PENDING" | "SOLD" | "WITHDRAWN" | "CANCELLED" | "DRAFT";
-  address: string;
-  city: string;
-  state: string;
-  price: string;
-  beds: number;
-  baths: number;
-  sqft: string;
-}
-
-// --- Data ---
-const statCards: StatCard[] = [
-  {
-    front: { label: "Active Listings", value: 2, subtitle: "Currently for sale", color: "bg-blue-500" },
-    back: { label: "Closed Listings", value: 12, subtitle: "YTD 2026", color: "bg-green-500" },
-  },
-  {
-    front: { label: "Pending Listings", value: 2, subtitle: "Under contract", color: "bg-yellow-500" },
-    back: { label: "Cancelled", value: 1, subtitle: "Withdrawn/expired", color: "bg-red-500" },
-  },
-  {
-    front: { label: "Upcoming Showings", value: 3, subtitle: "Next: Today 2:00 PM", color: "bg-purple-500" },
-    back: { label: "Past Showings", value: 28, subtitle: "This month", color: "bg-indigo-500" },
-  },
-  {
-    front: { label: "Avg. Days on Market", value: 18, subtitle: "\u2193 3 days vs last month", color: "bg-teal-500" },
-    back: { label: "Price Reductions", value: 0, subtitle: "Strong pricing!", color: "bg-orange-500" },
-  },
-];
-
-const properties: Property[] = [
-  {
-    id: 1,
-    status: "ACTIVE",
-    address: "1234 S Monaco Parkway",
-    city: "Denver",
-    state: "CO",
-    price: "$450,000",
-    beds: 4,
-    baths: 3,
-    sqft: "2,400",
-  },
-  {
-    id: 2,
-    status: "PENDING",
-    address: "5678 E Dry Creek Road",
-    city: "Centennial",
-    state: "CO",
-    price: "$385,000",
-    beds: 3,
-    baths: 2,
-    sqft: "1,850",
-  },
-  {
-    id: 3,
-    status: "ACTIVE",
-    address: "9012 W Hampden Avenue",
-    city: "Lakewood",
-    state: "CO",
-    price: "$520,000",
-    beds: 5,
-    baths: 4,
-    sqft: "3,100",
-  },
-];
 
 const filterOptions = ["All", "Active", "Pending", "Sold", "Withdrawn", "Cancelled", "Draft"];
 
@@ -110,7 +45,15 @@ const LinkIcon = () => (
 
 // --- Components ---
 
-function FlipCard({ card, index }: { card: StatCard; index: number }) {
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-10 h-10 border-4 border-gray-600 border-t-blue-500 rounded-full animate-spin" />
+    </div>
+  );
+}
+
+function FlipCard({ card }: { card: StatCard }) {
   const [flipped, setFlipped] = useState(false);
   const data = flipped ? card.back : card.front;
 
@@ -132,24 +75,32 @@ function FlipCard({ card, index }: { card: StatCard; index: number }) {
   );
 }
 
-function StatusBadge({ status }: { status: Property["status"] }) {
+function StatusBadge({ status }: { status: DbProperty["status"] }) {
   const colors: Record<string, string> = {
-    ACTIVE: "bg-green-500/20 text-green-400 border-green-500/30",
-    PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-    SOLD: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-    WITHDRAWN: "bg-gray-500/20 text-gray-400 border-gray-500/30",
-    CANCELLED: "bg-red-500/20 text-red-400 border-red-500/30",
-    DRAFT: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+    active: "bg-green-500/20 text-green-400 border-green-500/30",
+    pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    sold: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    withdrawn: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+    cancelled: "bg-red-500/20 text-red-400 border-red-500/30",
+    draft: "bg-gray-500/20 text-gray-400 border-gray-500/30",
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${colors[status]}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border uppercase ${colors[status] ?? colors.draft}`}>
       {status}
     </span>
   );
 }
 
-function PropertyCard({ property }: { property: Property }) {
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(price);
+}
+
+function formatSqft(sqft: number): string {
+  return new Intl.NumberFormat("en-US").format(sqft);
+}
+
+function PropertyCard({ property }: { property: DbProperty }) {
   return (
     <div className="bg-[#1e293b] rounded-xl overflow-hidden border border-gray-700/50 hover:border-gray-600 transition-colors">
       {/* Image placeholder */}
@@ -176,22 +127,22 @@ function PropertyCard({ property }: { property: Property }) {
         <p className="text-gray-400 text-sm mb-2">
           {property.city}, {property.state}
         </p>
-        <p className="text-white font-bold text-xl mb-3">{property.price}</p>
+        <p className="text-white font-bold text-xl mb-3">{formatPrice(property.price)}</p>
 
         {/* Stats row */}
         <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
-          <span>{property.beds} beds</span>
+          <span>{property.bedrooms} beds</span>
           <span className="text-gray-600">|</span>
-          <span>{property.baths} baths</span>
+          <span>{property.bathrooms} baths</span>
           <span className="text-gray-600">|</span>
-          <span>{property.sqft} sq ft</span>
+          <span>{formatSqft(property.sqft)} sq ft</span>
         </div>
 
         {/* Action buttons */}
         <div className="flex items-center gap-3">
-          <button className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
+          <Link href={`/my-listings/${property.id}`} className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
             View Details
-          </button>
+          </Link>
           <button className="ml-auto px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors">
             Schedule Showing
           </button>
@@ -272,11 +223,97 @@ function SettingsPanel({
 export default function DashboardPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [filter, setFilter] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [properties, setProperties] = useState<DbProperty[]>([]);
+  const [showings, setShowings] = useState<Showing[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const filteredProperties =
-    filter === "All"
-      ? properties
-      : properties.filter((p) => p.status.toLowerCase() === filter.toLowerCase());
+  useEffect(() => {
+    async function fetchData() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const [propertiesRes, showingsRes, messagesRes] = await Promise.all([
+        supabase.from("properties").select("*").eq("owner_id", user.id),
+        supabase
+          .from("showings")
+          .select("*")
+          .or(`requesting_agent_id.eq.${user.id},listing_agent_id.eq.${user.id}`),
+        supabase
+          .from("messages")
+          .select("id", { count: "exact" })
+          .eq("recipient_id", user.id)
+          .eq("read", false),
+      ]);
+
+      setProperties(propertiesRes.data ?? []);
+      setShowings(showingsRes.data ?? []);
+      setUnreadCount(messagesRes.count ?? 0);
+      setLoading(false);
+    }
+
+    fetchData();
+  }, []);
+
+  // Compute stat card values from real data
+  const statCards: StatCard[] = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+
+    const activeCount = properties.filter((p) => p.status === "active").length;
+    const pendingCount = properties.filter((p) => p.status === "pending").length;
+    const soldCount = properties.filter((p) => p.status === "sold").length;
+    const cancelledCount = properties.filter((p) => p.status === "cancelled").length;
+
+    const upcomingShowings = showings.filter(
+      (s) => (s.status === "pending" || s.status === "approved") && s.requested_date >= today
+    );
+    const pastShowings = showings.filter(
+      (s) => s.status === "completed" || s.requested_date < today
+    );
+
+    const activeProperties = properties.filter((p) => p.status === "active");
+    const avgDom =
+      activeProperties.length > 0
+        ? Math.round(activeProperties.reduce((sum, p) => sum + (p.days_on_market ?? 0), 0) / activeProperties.length)
+        : 0;
+
+    return [
+      {
+        front: { label: "Active Listings", value: activeCount, subtitle: "Currently for sale", color: "bg-blue-500" },
+        back: { label: "Closed Listings", value: soldCount, subtitle: "Total sold", color: "bg-green-500" },
+      },
+      {
+        front: { label: "Pending Listings", value: pendingCount, subtitle: "Under contract", color: "bg-yellow-500" },
+        back: { label: "Cancelled", value: cancelledCount, subtitle: "Withdrawn/expired", color: "bg-red-500" },
+      },
+      {
+        front: {
+          label: "Upcoming Showings",
+          value: upcomingShowings.length,
+          subtitle: upcomingShowings.length > 0 ? `Next: ${upcomingShowings[0].requested_date}` : "None scheduled",
+          color: "bg-purple-500",
+        },
+        back: { label: "Past Showings", value: pastShowings.length, subtitle: "Completed", color: "bg-indigo-500" },
+      },
+      {
+        front: { label: "Avg. Days on Market", value: avgDom, subtitle: activeProperties.length > 0 ? "Across active listings" : "No active listings", color: "bg-teal-500" },
+        back: { label: "Price Reductions", value: 0, subtitle: "Coming soon", color: "bg-orange-500" },
+      },
+    ];
+  }, [properties, showings]);
+
+  const filteredProperties = useMemo(() => {
+    if (filter === "All") return properties;
+    return properties.filter((p) => p.status.toLowerCase() === filter.toLowerCase());
+  }, [properties, filter]);
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="relative">
@@ -286,7 +323,7 @@ export default function DashboardPage() {
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statCards.map((card, i) => (
-          <FlipCard key={i} card={card} index={i} />
+          <FlipCard key={i} card={card} />
         ))}
       </div>
 
@@ -309,12 +346,15 @@ export default function DashboardPage() {
             </select>
 
             {/* Add Property button */}
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors">
+            <Link
+              href="/my-listings/create"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
+            >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
               Add Property
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -324,15 +364,25 @@ export default function DashboardPage() {
             <PropertyCard key={property.id} property={property} />
           ))}
 
+          {filteredProperties.length === 0 && (
+            <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500">
+              <HouseIcon />
+              <p className="mt-4 text-sm">No properties found. Add your first listing to get started.</p>
+            </div>
+          )}
+
           {/* Add New Property card */}
-          <button className="flex flex-col items-center justify-center min-h-[320px] rounded-xl border-2 border-dashed border-gray-700 hover:border-gray-500 bg-transparent hover:bg-[#1e293b]/30 transition-all cursor-pointer">
+          <Link
+            href="/my-listings/create"
+            className="flex flex-col items-center justify-center min-h-[320px] rounded-xl border-2 border-dashed border-gray-700 hover:border-gray-500 bg-transparent hover:bg-[#1e293b]/30 transition-all cursor-pointer"
+          >
             <div className="w-14 h-14 rounded-full bg-[#1e293b] flex items-center justify-center mb-3">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M12 5V19M5 12H19" stroke="#64748b" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </div>
             <span className="text-gray-500 font-medium text-sm">Add New Property</span>
-          </button>
+          </Link>
         </div>
       </div>
     </div>

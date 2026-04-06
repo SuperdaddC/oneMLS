@@ -107,6 +107,14 @@ export default function RegisterPage() {
       return;
     }
 
+    // Update role to 'fsbo' if needed (trigger defaults to 'agent')
+    if (accountType === "fsbo") {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("profiles").update({ role: "fsbo" }).eq("id", user.id);
+      }
+    }
+
     setSuccess(true);
     setLoading(false);
   }
