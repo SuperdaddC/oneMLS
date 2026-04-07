@@ -31,9 +31,9 @@ interface FormData {
   zip: string;
   county: string;
   property_type: PropertyType;
-  bedrooms: number;
-  bathrooms: number;
-  sqft: number;
+  bedrooms: string;
+  bathrooms: string;
+  sqft: string;
   lot_size: string;
   year_built: string;
   description: string;
@@ -55,9 +55,9 @@ const initialForm: FormData = {
   zip: "",
   county: "",
   property_type: "single_family",
-  bedrooms: 0,
-  bathrooms: 0,
-  sqft: 0,
+  bedrooms: "",
+  bathrooms: "",
+  sqft: "",
   lot_size: "",
   year_built: "",
   description: "",
@@ -113,9 +113,9 @@ export default function CreateListingPage() {
       if (!form.state) errs.state = "State is required";
       if (!form.zip.trim()) errs.zip = "ZIP is required";
     } else if (s === 2) {
-      if (form.bedrooms < 0) errs.bedrooms = "Invalid bedrooms";
-      if (form.bathrooms < 0) errs.bathrooms = "Invalid bathrooms";
-      if (form.sqft <= 0) errs.sqft = "Square feet is required";
+      if (form.bedrooms !== "" && Number(form.bedrooms) < 0) errs.bedrooms = "Invalid bedrooms";
+      if (form.bathrooms !== "" && Number(form.bathrooms) < 0) errs.bathrooms = "Invalid bathrooms";
+      if (!form.sqft || Number(form.sqft) <= 0) errs.sqft = "Square feet is required";
     } else if (s === 4) {
       if (!form.price || parseFloat(form.price) <= 0) errs.price = "Price is required";
     }
@@ -156,9 +156,9 @@ export default function CreateListingPage() {
       zip: form.zip,
       county: form.county || null,
       property_type: form.property_type,
-      bedrooms: form.bedrooms,
-      bathrooms: form.bathrooms,
-      sqft: form.sqft,
+      bedrooms: form.bedrooms ? parseInt(form.bedrooms) : 0,
+      bathrooms: form.bathrooms ? parseFloat(form.bathrooms) : 0,
+      sqft: form.sqft ? parseInt(form.sqft) : 0,
       lot_size: form.lot_size ? parseFloat(form.lot_size) : null,
       year_built: form.year_built ? parseInt(form.year_built) : null,
       description,
@@ -466,7 +466,7 @@ export default function CreateListingPage() {
                   type="number"
                   min="0"
                   value={form.bedrooms}
-                  onChange={(e) => update("bedrooms", parseInt(e.target.value) || 0)}
+                  onChange={(e) => update("bedrooms", e.target.value)}
                   className={inputClass}
                 />
                 {errors.bedrooms && <p className={errorClass}>{errors.bedrooms}</p>}
@@ -478,7 +478,7 @@ export default function CreateListingPage() {
                   min="0"
                   step="0.5"
                   value={form.bathrooms}
-                  onChange={(e) => update("bathrooms", parseFloat(e.target.value) || 0)}
+                  onChange={(e) => update("bathrooms", e.target.value)}
                   className={inputClass}
                 />
                 {errors.bathrooms && <p className={errorClass}>{errors.bathrooms}</p>}
@@ -489,7 +489,7 @@ export default function CreateListingPage() {
                   type="number"
                   min="0"
                   value={form.sqft}
-                  onChange={(e) => update("sqft", parseInt(e.target.value) || 0)}
+                  onChange={(e) => update("sqft", e.target.value)}
                   className={inputClass}
                 />
                 {errors.sqft && <p className={errorClass}>{errors.sqft}</p>}
@@ -784,7 +784,7 @@ export default function CreateListingPage() {
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-[#c9a962] uppercase tracking-wider">Details</h3>
                 <p className="text-gray-300">
-                  {form.bedrooms} bed / {form.bathrooms} bath / {form.sqft.toLocaleString()} sqft
+                  {form.bedrooms || 0} bed / {form.bathrooms || 0} bath / {Number(form.sqft || 0).toLocaleString()} sqft
                 </p>
                 {form.lot_size && <p className="text-gray-400">Lot: {parseFloat(form.lot_size).toLocaleString()} sqft</p>}
                 {form.year_built && <p className="text-gray-400">Built: {form.year_built}</p>}

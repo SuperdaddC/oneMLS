@@ -150,7 +150,7 @@ const sections: NavSection[] = [
     title: "MAIN",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: <DashboardIcon /> },
-      { label: "My Listings", href: "/my-listings", icon: <HomeIcon />, badge: "DRAFT_COUNT", badgeType: "draft" as const },
+      { label: "My Listings", href: "/my-listings", icon: <HomeIcon />, badge: "STATUS_COUNTS", badgeType: "status" as const },
       { label: "Showings", href: "/showings", icon: <CalendarIcon />, badge: "3", badgeType: "count" },
       { label: "Messages", href: "/messages", icon: <ChatIcon />, badge: "2", badgeType: "count" },
     ],
@@ -195,30 +195,52 @@ const accountItems: NavItem[] = [
   { label: "Logout", href: "/login", icon: <LogoutIcon /> },
 ];
 
-function Badge({ text, type }: { text: string; type: "count" | "soon" | "draft" }) {
-  if (type === "draft") {
-    if (text === "0") return null;
-    return (
-      <span
-        style={{
-          backgroundColor: "#f59e0b",
-          color: "#000",
-          fontSize: "11px",
-          fontWeight: 600,
-          borderRadius: "9999px",
-          minWidth: "20px",
-          height: "20px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "0 6px",
-          lineHeight: 1,
-        }}
-      >
-        {text}
-      </span>
-    );
-  }
+function StatusBadges({ counts, onClickStatus }: { counts: StatusCounts; onClickStatus: (status: string) => void }) {
+  const badges = [
+    { key: "draft", color: "#c9a962", label: "Drafts" },
+    { key: "active", color: "#3b82f6", label: "Active" },
+    { key: "pending", color: "#22c55e", label: "Pending" },
+    { key: "withdrawn", color: "#ef4444", label: "Withdrawn" },
+  ] as const;
+
+  const hasAny = badges.some(b => counts[b.key] > 0);
+  if (!hasAny) return null;
+
+  return (
+    <span style={{ display: "flex", gap: "3px", alignItems: "center" }}>
+      {badges.map(b => {
+        const count = counts[b.key];
+        if (count === 0) return null;
+        return (
+          <span
+            key={b.key}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClickStatus(b.key); }}
+            title={`${count} ${b.label}`}
+            style={{
+              backgroundColor: b.color,
+              color: b.key === "draft" ? "#000" : "#fff",
+              fontSize: "10px",
+              fontWeight: 700,
+              borderRadius: "9999px",
+              minWidth: "18px",
+              height: "18px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0 5px",
+              lineHeight: 1,
+              cursor: "pointer",
+            }}
+          >
+            {count}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function Badge({ text, type }: { text: string; type: "count" | "soon" | "draft" | "status" }) {
   if (type === "count") {
     return (
       <span
@@ -261,11 +283,18 @@ function Badge({ text, type }: { text: string; type: "count" | "soon" | "draft" 
   );
 }
 
+interface StatusCounts {
+  draft: number;
+  active: number;
+  pending: number;
+  withdrawn: number;
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [draftCount, setDraftCount] = useState(0);
+  const [statusCounts, setStatusCounts] = useState<StatusCounts>({ draft: 0, active: 0, pending: 0, withdrawn: 0 });
 
   useEffect(() => {
     const supabase = createClient();
@@ -274,10 +303,17 @@ export default function Sidebar() {
       if (data.user) {
         supabase
           .from("properties")
-          .select("id", { count: "exact", head: true })
+          .select("status")
           .eq("owner_id", data.user.id)
-          .eq("status", "draft")
-          .then(({ count }) => setDraftCount(count || 0));
+          .then(({ data: props }) => {
+            if (props) {
+              const counts = { draft: 0, active: 0, pending: 0, withdrawn: 0 };
+              props.forEach((p: { status: string }) => {
+                if (p.status in counts) counts[p.status as keyof StatusCounts]++;
+              });
+              setStatusCounts(counts);
+            }
+          });
       }
     });
   }, [pathname]);
@@ -384,12 +420,11 @@ export default function Sidebar() {
                   {item.icon}
                 </span>
                 <span style={{ flex: 1 }}>{item.label}</span>
-                {item.badge && item.badgeType && (
-                  <Badge
-                    text={item.badge === "DRAFT_COUNT" ? String(draftCount) : item.badge}
-                    type={item.badgeType as "count" | "soon" | "draft"}
-                  />
-                )}
+                {item.badge && item.badgeType && item.badge === "STATUS_COUNTS" ? (
+                  <StatusBadges counts={statusCounts} onClickStatus={(s) => router.push(`/my-listings?status=${s}`)} />
+                ) : item.badge && item.badgeType ? (
+                  <Badge text={item.badge} type={item.badgeType as "count" | "soon"} />
+                ) : null}
               </Link>
             ))}
           </div>

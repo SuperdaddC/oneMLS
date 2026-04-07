@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Property } from "@/lib/types";
 
@@ -16,12 +16,15 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default function MyListingsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
+  const initialFilter = searchParams.get("status") || "";
   const [claimSearch, setClaimSearch] = useState("");
   const [listings, setListings] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState(initialFilter);
 
   useEffect(() => {
     loadListings();
@@ -105,6 +108,37 @@ export default function MyListingsPage() {
         </div>
       </div>
 
+      {/* Status Filter Bar */}
+      {listings.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { key: "", label: "All", color: "bg-gray-600" },
+            { key: "draft", label: "Drafts", color: "bg-[#c9a962] text-black" },
+            { key: "active", label: "Active", color: "bg-blue-600" },
+            { key: "pending", label: "Pending", color: "bg-green-600" },
+            { key: "withdrawn", label: "Withdrawn", color: "bg-red-600" },
+            { key: "sold", label: "Sold", color: "bg-gray-500" },
+            { key: "cancelled", label: "Cancelled", color: "bg-gray-700" },
+          ].map((f) => {
+            const count = f.key ? listings.filter((l) => l.status === f.key).length : listings.length;
+            if (f.key && count === 0) return null;
+            return (
+              <button
+                key={f.key}
+                onClick={() => setStatusFilter(f.key)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  statusFilter === f.key
+                    ? `${f.color} text-white ring-2 ring-white/30`
+                    : "bg-[#161620] text-gray-400 hover:text-white"
+                }`}
+              >
+                {f.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Listings Table */}
       <div className="bg-[#1c1c2e] rounded-lg overflow-hidden">
         {loading ? (
@@ -151,7 +185,7 @@ export default function MyListingsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
-                {listings.map((listing) => (
+                {listings.filter((l) => !statusFilter || l.status === statusFilter).map((listing) => (
                   <tr key={listing.id} className="hover:bg-[#1e1e32] transition-colors">
                     <td className="px-4 py-3">
                       {listing.photos && listing.photos.length > 0 ? (
