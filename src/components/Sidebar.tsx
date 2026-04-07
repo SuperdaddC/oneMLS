@@ -150,7 +150,7 @@ const sections: NavSection[] = [
     title: "MAIN",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: <DashboardIcon /> },
-      { label: "My Listings", href: "/my-listings", icon: <HomeIcon /> },
+      { label: "My Listings", href: "/my-listings", icon: <HomeIcon />, badge: "DRAFT_COUNT", badgeType: "draft" as const },
       { label: "Showings", href: "/showings", icon: <CalendarIcon />, badge: "3", badgeType: "count" },
       { label: "Messages", href: "/messages", icon: <ChatIcon />, badge: "2", badgeType: "count" },
     ],
@@ -195,7 +195,30 @@ const accountItems: NavItem[] = [
   { label: "Logout", href: "/login", icon: <LogoutIcon /> },
 ];
 
-function Badge({ text, type }: { text: string; type: "count" | "soon" }) {
+function Badge({ text, type }: { text: string; type: "count" | "soon" | "draft" }) {
+  if (type === "draft") {
+    if (text === "0") return null;
+    return (
+      <span
+        style={{
+          backgroundColor: "#f59e0b",
+          color: "#000",
+          fontSize: "11px",
+          fontWeight: 600,
+          borderRadius: "9999px",
+          minWidth: "20px",
+          height: "20px",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "0 6px",
+          lineHeight: 1,
+        }}
+      >
+        {text}
+      </span>
+    );
+  }
   if (type === "count") {
     return (
       <span
@@ -242,11 +265,22 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [draftCount, setDraftCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-  }, []);
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      if (data.user) {
+        supabase
+          .from("properties")
+          .select("id", { count: "exact", head: true })
+          .eq("owner_id", data.user.id)
+          .eq("status", "draft")
+          .then(({ count }) => setDraftCount(count || 0));
+      }
+    });
+  }, [pathname]);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -351,7 +385,10 @@ export default function Sidebar() {
                 </span>
                 <span style={{ flex: 1 }}>{item.label}</span>
                 {item.badge && item.badgeType && (
-                  <Badge text={item.badge} type={item.badgeType} />
+                  <Badge
+                    text={item.badge === "DRAFT_COUNT" ? String(draftCount) : item.badge}
+                    type={item.badgeType as "count" | "soon" | "draft"}
+                  />
                 )}
               </Link>
             ))}

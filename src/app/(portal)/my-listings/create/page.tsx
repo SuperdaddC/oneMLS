@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { PropertyType, PropertyStatus } from "@/lib/types";
+
+const supabase = createClient();
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
@@ -39,6 +41,11 @@ interface FormData {
   photos: string[];
   price: string;
   commission_rate: string;
+  open_house_enabled: boolean;
+  open_house_date: string;
+  open_house_start_time: string;
+  open_house_end_time: string;
+  open_house_notes: string;
 }
 
 const initialForm: FormData = {
@@ -58,23 +65,38 @@ const initialForm: FormData = {
   photos: [],
   price: "",
   commission_rate: "",
+  open_house_enabled: false,
+  open_house_date: "",
+  open_house_start_time: "",
+  open_house_end_time: "",
+  open_house_notes: "",
 };
 
 export default function CreateListingPage() {
   const router = useRouter();
-  const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(initialForm);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dragOver, setDragOver] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   const totalSteps = 5;
 
-  const update = (field: keyof FormData, value: string | number | string[]) => {
+  // Toast auto-dismiss
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const update = (field: keyof FormData, value: string | number | string[] | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => {
       const next = { ...prev };
@@ -101,8 +123,93 @@ export default function CreateListingPage() {
     return Object.keys(errs).length === 0;
   };
 
-  const nextStep = () => {
+  const buildPayload = (userId: string, status: PropertyStatus) => {
+    const featuresArray = form.features
+      .split(",")
+      .map((f) => f.trim())
+      .filter(Boolean);
+
+    // Build open house JSON to store in description metadata
+    const openHouseData = form.open_house_enabled
+      ? {
+          enabled: true,
+          date: form.open_house_date,
+          start_time: form.open_house_start_time,
+          end_time: form.open_house_end_time,
+          notes: form.open_house_notes,
+        }
+      : null;
+
+    // Append open house info to description if enabled
+    let description = form.description || null;
+    if (openHouseData && openHouseData.date) {
+      const ohInfo = `\n\n[OPEN_HOUSE:${JSON.stringify(openHouseData)}]`;
+      description = (description || "") + ohInfo;
+    }
+
+    return {
+      owner_id: userId,
+      status,
+      address: form.address,
+      city: form.city,
+      state: form.state,
+      zip: form.zip,
+      county: form.county || null,
+      property_type: form.property_type,
+      bedrooms: form.bedrooms,
+      bathrooms: form.bathrooms,
+      sqft: form.sqft,
+      lot_size: form.lot_size ? parseFloat(form.lot_size) : null,
+      year_built: form.year_built ? parseInt(form.year_built) : null,
+      description,
+      features: featuresArray,
+      photos: form.photos,
+      price: form.price ? parseFloat(form.price) : 0,
+      commission_rate: form.commission_rate ? parseFloat(form.commission_rate) : null,
+    };
+  };
+
+  const saveDraft = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const payload = buildPayload(userData.user.id, "draft");
+
+      if (draftId) {
+        // Update existing draft
+        const { error } = await supabase
+          .from("properties")
+          .update(payload)
+          .eq("id", draftId);
+        if (error) {
+          console.error("Draft update error:", error);
+          return;
+        }
+      } else {
+        // Insert new draft
+        const { data, error } = await supabase
+          .from("properties")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error) {
+          console.error("Draft insert error:", error);
+          return;
+        }
+        if (data) {
+          setDraftId(data.id);
+        }
+      }
+      setToast("Draft saved");
+    } catch (err) {
+      console.error("Draft save error:", err);
+    }
+  };
+
+  const nextStep = async () => {
     if (validateStep(step)) {
+      await saveDraft();
       setStep((s) => Math.min(s + 1, totalSteps));
     }
   };
@@ -111,14 +218,20 @@ export default function CreateListingPage() {
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
+      const fileArray = Array.from(files);
+      if (fileArray.length === 0) return;
+
       setUploading(true);
+      setUploadProgress(`Uploading 1 of ${fileArray.length}...`);
       try {
         const { data: userData } = await supabase.auth.getUser();
         if (!userData.user) return;
         const userId = userData.user.id;
 
         const newUrls: string[] = [];
-        for (const file of Array.from(files)) {
+        for (let i = 0; i < fileArray.length; i++) {
+          setUploadProgress(`Uploading ${i + 1} of ${fileArray.length}...`);
+          const file = fileArray[i];
           const ext = file.name.split(".").pop();
           const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
           const { error } = await supabase.storage
@@ -134,11 +247,13 @@ export default function CreateListingPage() {
           newUrls.push(urlData.publicUrl);
         }
         setForm((prev) => ({ ...prev, photos: [...prev.photos, ...newUrls] }));
+        setUploadProgress(`${newUrls.length} photo${newUrls.length !== 1 ? "s" : ""} uploaded`);
+        setTimeout(() => setUploadProgress(""), 3000);
       } finally {
         setUploading(false);
       }
     },
-    [supabase]
+    []
   );
 
   const removePhoto = (index: number) => {
@@ -146,6 +261,16 @@ export default function CreateListingPage() {
       ...prev,
       photos: prev.photos.filter((_, i) => i !== index),
     }));
+  };
+
+  const setPrimaryPhoto = (index: number) => {
+    if (index === 0) return;
+    setForm((prev) => {
+      const newPhotos = [...prev.photos];
+      const [photo] = newPhotos.splice(index, 1);
+      newPhotos.unshift(photo);
+      return { ...prev, photos: newPhotos };
+    });
   };
 
   const handleDrop = useCallback(
@@ -168,36 +293,24 @@ export default function CreateListingPage() {
         return;
       }
 
-      const featuresArray = form.features
-        .split(",")
-        .map((f) => f.trim())
-        .filter(Boolean);
+      const payload = buildPayload(userData.user.id, status);
 
-      const payload = {
-        owner_id: userData.user.id,
-        status,
-        address: form.address,
-        city: form.city,
-        state: form.state,
-        zip: form.zip,
-        county: form.county || null,
-        property_type: form.property_type,
-        bedrooms: form.bedrooms,
-        bathrooms: form.bathrooms,
-        sqft: form.sqft,
-        lot_size: form.lot_size ? parseFloat(form.lot_size) : null,
-        year_built: form.year_built ? parseInt(form.year_built) : null,
-        description: form.description || null,
-        features: featuresArray,
-        photos: form.photos,
-        price: parseFloat(form.price),
-        commission_rate: form.commission_rate ? parseFloat(form.commission_rate) : null,
-      };
-
-      const { error } = await supabase.from("properties").insert(payload);
-      if (error) {
-        alert("Error creating listing: " + error.message);
-        return;
+      if (draftId) {
+        // Update the existing draft with final status
+        const { error } = await supabase
+          .from("properties")
+          .update(payload)
+          .eq("id", draftId);
+        if (error) {
+          alert("Error updating listing: " + error.message);
+          return;
+        }
+      } else {
+        const { error } = await supabase.from("properties").insert(payload);
+        if (error) {
+          alert("Error creating listing: " + error.message);
+          return;
+        }
       }
       router.push("/my-listings");
     } finally {
@@ -214,6 +327,13 @@ export default function CreateListingPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed top-6 right-6 z-50 bg-[#1c1c2e] border border-[#c9a962] text-[#c9a962] px-4 py-2 rounded-lg shadow-lg text-sm font-medium animate-fade-in">
+          {toast}
+        </div>
+      )}
+
       {/* Breadcrumb */}
       <div className="text-sm text-gray-400">
         <span className="hover:text-white cursor-pointer" onClick={() => router.push("/dashboard")}>
@@ -447,7 +567,11 @@ export default function CreateListingPage() {
                 accept="image/*"
                 multiple
                 className="hidden"
-                onChange={(e) => e.target.files && handleFiles(e.target.files)}
+                onChange={(e) => {
+                  if (e.target.files) handleFiles(e.target.files);
+                  // Reset so same file can be re-selected
+                  e.target.value = "";
+                }}
               />
               <svg
                 className="mx-auto h-12 w-12 text-gray-400 mb-3"
@@ -463,26 +587,65 @@ export default function CreateListingPage() {
                 />
               </svg>
               <p className="text-gray-400">
-                {uploading ? "Uploading..." : "Drag & drop photos here or click to browse"}
+                {uploading ? uploadProgress : "Drag & drop photos here or click to browse"}
               </p>
               <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP up to 10MB each</p>
             </div>
 
+            {/* Upload progress / count */}
+            {!uploading && uploadProgress && (
+              <p className="text-sm text-[#c9a962]">{uploadProgress}</p>
+            )}
+
+            {/* Photo thumbnails */}
             {form.photos.length > 0 && (
               <div className="grid grid-cols-4 gap-3">
                 {form.photos.map((url, i) => (
-                  <div key={i} className="relative group">
+                  <div key={url} className="relative group bg-[#161620] rounded-lg overflow-hidden border border-gray-700">
                     <img
                       src={url}
                       alt={`Photo ${i + 1}`}
-                      className="w-full h-24 object-cover rounded-lg"
+                      className="w-full h-28 object-cover"
                     />
+                    {/* Position number */}
+                    <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                      #{i + 1}
+                    </span>
+                    {/* Primary star (gold) */}
+                    {i === 0 && (
+                      <span className="absolute top-1 left-8 text-[#c9a962] text-lg" title="Primary photo">
+                        &#9733;
+                      </span>
+                    )}
+                    {/* Set as primary button for non-primary */}
+                    {i !== 0 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPrimaryPhoto(i);
+                        }}
+                        title="Set as primary"
+                        className="absolute top-1 left-8 text-gray-500 hover:text-[#c9a962] text-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        &#9734;
+                      </button>
+                    )}
+                    {/* Remove button */}
                     <button
-                      onClick={() => removePhoto(i)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removePhoto(i);
+                      }}
                       className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       X
                     </button>
+                    {/* Primary label */}
+                    {i === 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-[#c9a962]/90 text-black text-xs text-center py-0.5 font-medium">
+                        PRIMARY
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -524,6 +687,71 @@ export default function CreateListingPage() {
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
               </div>
+            </div>
+
+            {/* Open House Section */}
+            <div className="border-t border-gray-700 pt-4 mt-4">
+              <h3 className="text-md font-semibold text-white mb-3">Open House</h3>
+              <div className="flex items-center gap-3 mb-4">
+                <button
+                  type="button"
+                  onClick={() => update("open_house_enabled", !form.open_house_enabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    form.open_house_enabled ? "bg-[#c9a962]" : "bg-gray-600"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      form.open_house_enabled ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+                <span className="text-sm text-gray-300">Schedule Open House</span>
+              </div>
+
+              {form.open_house_enabled && (
+                <div className="space-y-4 pl-2">
+                  <div>
+                    <label className={labelClass}>Open House Date</label>
+                    <input
+                      type="date"
+                      value={form.open_house_date}
+                      onChange={(e) => update("open_house_date", e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelClass}>Start Time</label>
+                      <input
+                        type="time"
+                        value={form.open_house_start_time}
+                        onChange={(e) => update("open_house_start_time", e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>End Time</label>
+                      <input
+                        type="time"
+                        value={form.open_house_end_time}
+                        onChange={(e) => update("open_house_end_time", e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Notes (optional)</label>
+                    <input
+                      type="text"
+                      value={form.open_house_notes}
+                      onChange={(e) => update("open_house_notes", e.target.value)}
+                      placeholder="e.g., Ring doorbell on arrival"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -574,6 +802,21 @@ export default function CreateListingPage() {
               </div>
             </div>
 
+            {/* Open House */}
+            {form.open_house_enabled && form.open_house_date && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-[#c9a962] uppercase tracking-wider">Open House</h3>
+                <p className="text-gray-300">
+                  {form.open_house_date}
+                  {form.open_house_start_time && ` from ${form.open_house_start_time}`}
+                  {form.open_house_end_time && ` to ${form.open_house_end_time}`}
+                </p>
+                {form.open_house_notes && (
+                  <p className="text-gray-400">Notes: {form.open_house_notes}</p>
+                )}
+              </div>
+            )}
+
             {/* Description */}
             {form.description && (
               <div className="space-y-2">
@@ -611,12 +854,18 @@ export default function CreateListingPage() {
                 </h3>
                 <div className="grid grid-cols-4 gap-3">
                   {form.photos.map((url, i) => (
-                    <img
-                      key={i}
-                      src={url}
-                      alt={`Photo ${i + 1}`}
-                      className="w-full h-24 object-cover rounded-lg"
-                    />
+                    <div key={url} className="relative">
+                      <img
+                        src={url}
+                        alt={`Photo ${i + 1}`}
+                        className="w-full h-24 object-cover rounded-lg"
+                      />
+                      {i === 0 && (
+                        <span className="absolute top-1 left-1 text-[#c9a962] text-sm" title="Primary">
+                          &#9733; Primary
+                        </span>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
