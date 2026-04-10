@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Property } from "@/lib/types";
@@ -14,7 +14,15 @@ const STATUS_STYLES: Record<string, string> = {
   draft: "bg-gray-900/50 text-gray-400 border-gray-600/50",
 };
 
-export default function MyListingsPage() {
+export default function MyListingsPageWrapper() {
+  return (
+    <Suspense fallback={<div className="p-12 text-center text-gray-400">Loading...</div>}>
+      <MyListingsPage />
+    </Suspense>
+  );
+}
+
+function MyListingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
