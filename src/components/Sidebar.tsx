@@ -11,7 +11,7 @@ interface NavItem {
   href: string;
   icon?: React.ReactNode;
   badge?: string;
-  badgeType?: "count" | "soon";
+  badgeType?: "count" | "soon" | "status";
 }
 
 interface NavSection {
