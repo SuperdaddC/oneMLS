@@ -145,12 +145,19 @@ const CartIcon = () => (
   </svg>
 );
 
+const HeartIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const sections: NavSection[] = [
   {
     title: "MAIN",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: <DashboardIcon /> },
       { label: "My Listings", href: "/my-listings", icon: <HomeIcon />, badge: "STATUS_COUNTS", badgeType: "status" as const },
+      { label: "Saved", href: "/saved", icon: <HeartIcon />, badge: "SAVED_COUNT", badgeType: "count" as const },
       { label: "Showings", href: "/showings", icon: <CalendarIcon />, badge: "3", badgeType: "count" },
       { label: "Messages", href: "/messages", icon: <ChatIcon />, badge: "2", badgeType: "count" },
     ],
@@ -295,6 +302,7 @@ export default function Sidebar() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [statusCounts, setStatusCounts] = useState<StatusCounts>({ draft: 0, active: 0, pending: 0, withdrawn: 0 });
+  const [savedCount, setSavedCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -313,6 +321,13 @@ export default function Sidebar() {
               });
               setStatusCounts(counts);
             }
+          });
+        supabase
+          .from("saved_listings")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", data.user.id)
+          .then(({ count }) => {
+            setSavedCount(count ?? 0);
           });
       }
     });
@@ -422,6 +437,8 @@ export default function Sidebar() {
                 <span style={{ flex: 1 }}>{item.label}</span>
                 {item.badge && item.badgeType && item.badge === "STATUS_COUNTS" ? (
                   <StatusBadges counts={statusCounts} onClickStatus={(s) => router.push(`/my-listings?status=${s}`)} />
+                ) : item.badge && item.badge === "SAVED_COUNT" ? (
+                  savedCount > 0 ? <Badge text={String(savedCount)} type="count" /> : null
                 ) : item.badge && item.badgeType ? (
                   <Badge text={item.badge} type={item.badgeType as "count" | "soon"} />
                 ) : null}

@@ -7,6 +7,7 @@ import MortgageCalculator from "@/components/MortgageCalculator";
 import ShareButton from "@/components/ShareButton";
 import PropertyCard from "@/components/PropertyCard";
 import PropertyMapWrapper from "@/components/PropertyMapWrapper";
+import FavoriteButton from "@/components/FavoriteButton";
 
 /* ---------- Helpers ---------- */
 
@@ -171,6 +172,7 @@ export default async function PropertyDetailPage({
 
             {/* Right: CTA buttons */}
             <div className="flex flex-shrink-0 items-center gap-3">
+              <FavoriteButton propertyId={property.id} size="lg" />
               <ShareButton />
               <button className="rounded-lg bg-[#c9a962] px-6 py-2.5 text-sm font-semibold text-[#0a0a0f] transition-colors hover:bg-[#d4b872]">
                 Schedule Showing

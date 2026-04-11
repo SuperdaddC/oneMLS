@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Property, Profile } from "@/lib/types";
+import FavoriteButton from "@/components/FavoriteButton";
 
 interface PropertyCardProps {
   property: Property & { owner?: Profile };
@@ -54,6 +55,10 @@ export default function PropertyCard({ property }: PropertyCardProps) {
               <span className="badge-dot" />
               {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
             </span>
+          </div>
+          {/* Favorite button */}
+          <div className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm">
+            <FavoriteButton propertyId={property.id} size="sm" />
           </div>
         </div>
 
