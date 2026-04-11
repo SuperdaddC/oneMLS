@@ -10,6 +10,7 @@ import PropertyCard from "@/components/PropertyCard";
 import PropertyMapWrapper from "@/components/PropertyMapWrapper";
 import FavoriteButton from "@/components/FavoriteButton";
 import ViewTracker from "@/components/ViewTracker";
+import PriceHistoryChart from "@/components/PriceHistoryChart";
 
 /* ---------- Helpers ---------- */
 
@@ -257,6 +258,22 @@ export default async function PropertyDetailPage({
               </section>
             )}
 
+            {/* Price History */}
+            <section className="animate-fade-in">
+              <h2 className="mb-4 text-xl font-bold text-white">
+                <span className="flex items-center gap-2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a962" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                  Price History
+                </span>
+              </h2>
+              <PriceHistoryChart
+                priceHistory={property.price_history || []}
+                currentPrice={property.price}
+              />
+            </section>
+
             {/* Features */}
             {property.features && property.features.length > 0 && (
               <section className="animate-fade-in">
@@ -270,6 +287,59 @@ export default async function PropertyDetailPage({
                       {feature}
                     </span>
                   ))}
+                </div>
+              </section>
+            )}
+
+            {/* Virtual Tour */}
+            {property.virtual_tour_url && (
+              <section className="animate-fade-in">
+                <h2 className="mb-4 text-xl font-bold text-white">
+                  <span className="flex items-center gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a962" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    Virtual Tour
+                  </span>
+                </h2>
+                <div className="overflow-hidden rounded-xl border border-[#2a2a3a] bg-[#161620]">
+                  <div className="relative w-full" style={{ height: "450px" }}>
+                    <iframe
+                      src={property.virtual_tour_url}
+                      title="Virtual Tour"
+                      className="absolute inset-0 h-full w-full rounded-t-xl"
+                      style={{ border: "none" }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; xr-spatial-tracking"
+                      allowFullScreen
+                    />
+                  </div>
+                  <div className="flex items-center justify-between border-t border-[#2a2a3a] px-5 py-3">
+                    <span className="text-xs text-[#94a3b8]">
+                      View this property in immersive 3D
+                    </span>
+                    <a
+                      href={property.virtual_tour_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm font-medium text-[#c9a962] transition-colors hover:text-[#d4b872]"
+                    >
+                      Open in New Tab
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                      </svg>
+                    </a>
+                  </div>
                 </div>
               </section>
             )}
@@ -300,55 +370,6 @@ export default async function PropertyDetailPage({
                 ))}
               </div>
             </section>
-
-            {/* Virtual Tour */}
-            {property.virtual_tour_url && (
-              <section className="animate-fade-in">
-                <h2 className="mb-4 text-xl font-bold text-white">Virtual Tour</h2>
-                <div className="overflow-hidden rounded-xl border border-[#2a2a3a] bg-[#161620]">
-                  <a
-                    href={property.virtual_tour_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-5 transition-colors hover:bg-[#1c1c2e]"
-                  >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#c9a962]/10">
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#c9a962"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polygon points="5 3 19 12 5 21 5 3" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-white">Take a Virtual Tour</p>
-                      <p className="text-xs text-[#94a3b8]">View this property in 3D</p>
-                    </div>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#94a3b8"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="ml-auto"
-                    >
-                      <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-                      <polyline points="15 3 21 3 21 9" />
-                      <line x1="10" y1="14" x2="21" y2="3" />
-                    </svg>
-                  </a>
-                </div>
-              </section>
-            )}
 
             {/* Showing Instructions */}
             {property.showing_instructions && (
