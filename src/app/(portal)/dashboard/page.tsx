@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase";
 import type { Property as DbProperty, Showing } from "@/lib/types";
 
@@ -103,9 +104,19 @@ function formatSqft(sqft: number): string {
 function PropertyCard({ property }: { property: DbProperty }) {
   return (
     <div className="bg-[#1e293b] rounded-xl overflow-hidden border border-gray-700/50 hover:border-gray-600 transition-colors">
-      {/* Image placeholder */}
+      {/* Image */}
       <div className="relative h-44 bg-[#0f172a] flex items-center justify-center">
-        <HouseIcon />
+        {property.photos?.[0] ? (
+          <Image
+            src={property.photos[0]}
+            alt={property.address}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover"
+          />
+        ) : (
+          <HouseIcon />
+        )}
         {/* Status badge */}
         <div className="absolute top-3 left-3">
           <StatusBadge status={property.status} />

@@ -62,18 +62,68 @@ export async function searchProperties(filters: {
 }
 
 export async function getSimilarProperties(property: Property, limit = 3) {
-  const supabase = await createServerSupabaseClient();
-  const priceRange = Number(property.price) * 0.2;
-  const { data } = await supabase
-    .from("properties")
-    .select("*, owner:profiles!owner_id(first_name, last_name, phone, email, brokerage_name)")
-    .eq("status", "active")
-    .eq("state", property.state)
-    .neq("id", property.id)
-    .gte("price", Number(property.price) - priceRange)
-    .lte("price", Number(property.price) + priceRange)
-    .limit(limit);
-  return (data || []) as (Property & { owner: Profile })[];
+  try {
+    const supabase = await createServerSupabaseClient();
+    const price = Number(property.price);
+    const priceRange = price * 0.2;
+    const selectFields = "*, owner:profiles!owner_id(first_name, last_name, phone, email, brokerage_name)";
+
+    // Strategy 1: Same state + similar price (±20%)
+    const { data: exact } = await supabase
+      .from("properties")
+      .select(selectFields)
+      .eq("status", "active")
+      .eq("state", property.state)
+      .neq("id", property.id)
+      .gte("price", price - priceRange)
+      .lte("price", price + priceRange)
+      .limit(limit);
+
+    if (exact && exact.length >= limit) {
+      return exact as (Property & { owner: Profile })[];
+    }
+
+    // Strategy 2: Same state, any price
+    const { data: sameState } = await supabase
+      .from("properties")
+      .select(selectFields)
+      .eq("status", "active")
+      .eq("state", property.state)
+      .neq("id", property.id)
+      .limit(limit);
+
+    if (sameState && sameState.length >= limit) {
+      return sameState as (Property & { owner: Profile })[];
+    }
+
+    // Strategy 3: Similar price nationally (±30%)
+    const widerRange = price * 0.3;
+    const { data: national } = await supabase
+      .from("properties")
+      .select(selectFields)
+      .eq("status", "active")
+      .neq("id", property.id)
+      .gte("price", price - widerRange)
+      .lte("price", price + widerRange)
+      .limit(limit);
+
+    if (national && national.length > 0) {
+      return national as (Property & { owner: Profile })[];
+    }
+
+    // Strategy 4: Any active properties as last resort
+    const { data: fallback } = await supabase
+      .from("properties")
+      .select(selectFields)
+      .eq("status", "active")
+      .neq("id", property.id)
+      .limit(limit);
+
+    return (fallback || []) as (Property & { owner: Profile })[];
+  } catch (error) {
+    console.error("getSimilarProperties error:", error);
+    return [];
+  }
 }
 
 export async function getPublicStats() {

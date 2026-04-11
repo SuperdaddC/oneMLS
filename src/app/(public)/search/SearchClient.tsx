@@ -27,6 +27,30 @@ interface SearchClientProps {
   initialFilters: Filters;
 }
 
+/* ---------- state name → code mapping ---------- */
+const STATE_NAME_TO_CODE: Record<string, string> = {
+  alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
+  colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
+  hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA",
+  kansas: "KS", kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD",
+  massachusetts: "MA", michigan: "MI", minnesota: "MN", mississippi: "MS", missouri: "MO",
+  montana: "MT", nebraska: "NE", nevada: "NV", "new hampshire": "NH", "new jersey": "NJ",
+  "new mexico": "NM", "new york": "NY", "north carolina": "NC", "north dakota": "ND", ohio: "OH",
+  oklahoma: "OK", oregon: "OR", pennsylvania: "PA", "rhode island": "RI", "south carolina": "SC",
+  "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT", vermont: "VT",
+  virginia: "VA", washington: "WA", "west virginia": "WV", wisconsin: "WI", wyoming: "WY",
+  "district of columbia": "DC",
+};
+const VALID_STATE_CODES = new Set(Object.values(STATE_NAME_TO_CODE));
+
+/** Return 2-letter state code if input matches a state name or code, else undefined */
+function resolveStateCode(input: string): string | undefined {
+  const trimmed = input.trim();
+  const upper = trimmed.toUpperCase();
+  if (VALID_STATE_CODES.has(upper)) return upper;
+  return STATE_NAME_TO_CODE[trimmed.toLowerCase()];
+}
+
 /* ---------- constants ---------- */
 const PRICE_PRESETS = [
   { label: "Any", value: "" },
@@ -133,9 +157,9 @@ function SearchClientInner({
     <div className="min-h-screen bg-[#0a0a0f]">
       {/* -------- FILTER BAR -------- */}
       <div className="bg-[#1c1c2e] border-b border-[#2a2a3a] px-4 py-3">
-        <div className="max-w-[1800px] mx-auto flex flex-wrap gap-3 items-end">
-          {/* Search input */}
-          <div className="flex-1 min-w-[200px]">
+        <div className="max-w-[1800px] mx-auto space-y-3">
+          {/* Row 1: Search input (full width) */}
+          <div className="w-full">
             <label className="block text-xs text-[#94a3b8] mb-1">Search</label>
             <div className="relative">
               <svg
@@ -150,11 +174,17 @@ function SearchClientInner({
               </svg>
               <input
                 type="text"
-                placeholder="City, address, or MLS ID..."
+                placeholder="City, state, address, or MLS ID..."
                 defaultValue={query}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    pushFilters({ q: (e.target as HTMLInputElement).value });
+                    const val = (e.target as HTMLInputElement).value;
+                    const stateCode = resolveStateCode(val);
+                    if (stateCode) {
+                      pushFilters({ q: "", state: stateCode });
+                    } else {
+                      pushFilters({ q: val, state: "" });
+                    }
                   }
                 }}
                 className="w-full pl-10 pr-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white placeholder-[#94a3b8] text-sm focus:outline-none focus:border-[#c9a962]"
@@ -162,112 +192,115 @@ function SearchClientInner({
             </div>
           </div>
 
-          {/* Min Price */}
-          <div className="min-w-[120px]">
-            <label className="block text-xs text-[#94a3b8] mb-1">
-              Min Price
-            </label>
-            <select
-              value={minPrice}
-              onChange={(e) => pushFilters({ minPrice: e.target.value })}
-              className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962] appearance-none cursor-pointer"
-            >
-              {PRICE_PRESETS.map((p) => (
-                <option key={`min-${p.value}`} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Max Price */}
-          <div className="min-w-[120px]">
-            <label className="block text-xs text-[#94a3b8] mb-1">
-              Max Price
-            </label>
-            <select
-              value={maxPrice}
-              onChange={(e) => pushFilters({ maxPrice: e.target.value })}
-              className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962] appearance-none cursor-pointer"
-            >
-              {PRICE_PRESETS.map((p) => (
-                <option key={`max-${p.value}`} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Beds */}
-          <div>
-            <label className="block text-xs text-[#94a3b8] mb-1">Beds</label>
-            <div className="flex gap-1">
-              {BED_OPTIONS.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => pushFilters({ beds: bedValue(opt) })}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    beds === bedValue(opt)
-                      ? "bg-[#c9a962] text-[#0a0a0f]"
-                      : "bg-[#161620] border border-[#2a2a3a] text-[#94a3b8] hover:border-[#c9a962]"
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
+          {/* Row 2: Filters */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 items-end">
+            {/* Min Price */}
+            <div>
+              <label className="block text-xs text-[#94a3b8] mb-1">
+                Min Price
+              </label>
+              <select
+                value={minPrice}
+                onChange={(e) => pushFilters({ minPrice: e.target.value })}
+                className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962] appearance-none cursor-pointer"
+              >
+                {PRICE_PRESETS.map((p) => (
+                  <option key={`min-${p.value}`} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
 
-          {/* Baths */}
-          <div>
-            <label className="block text-xs text-[#94a3b8] mb-1">Baths</label>
-            <div className="flex gap-1">
-              {BATH_OPTIONS.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => pushFilters({ baths: bathValue(opt) })}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    baths === bathValue(opt)
-                      ? "bg-[#c9a962] text-[#0a0a0f]"
-                      : "bg-[#161620] border border-[#2a2a3a] text-[#94a3b8] hover:border-[#c9a962]"
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
+            {/* Max Price */}
+            <div>
+              <label className="block text-xs text-[#94a3b8] mb-1">
+                Max Price
+              </label>
+              <select
+                value={maxPrice}
+                onChange={(e) => pushFilters({ maxPrice: e.target.value })}
+                className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962] appearance-none cursor-pointer"
+              >
+                {PRICE_PRESETS.map((p) => (
+                  <option key={`max-${p.value}`} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
 
-          {/* Property Type */}
-          <div className="min-w-[140px]">
-            <label className="block text-xs text-[#94a3b8] mb-1">Type</label>
-            <select
-              value={propertyType}
-              onChange={(e) => pushFilters({ type: e.target.value })}
-              className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962] appearance-none cursor-pointer"
-            >
-              {PROPERTY_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </div>
+            {/* Beds */}
+            <div>
+              <label className="block text-xs text-[#94a3b8] mb-1">Beds</label>
+              <div className="flex gap-1">
+                {BED_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => pushFilters({ beds: bedValue(opt) })}
+                    className={`px-2.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      beds === bedValue(opt)
+                        ? "bg-[#c9a962] text-[#0a0a0f]"
+                        : "bg-[#161620] border border-[#2a2a3a] text-[#94a3b8] hover:border-[#c9a962]"
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* Sort */}
-          <div className="min-w-[150px]">
-            <label className="block text-xs text-[#94a3b8] mb-1">Sort</label>
-            <select
-              value={sort}
-              onChange={(e) => pushFilters({ sort: e.target.value })}
-              className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962] appearance-none cursor-pointer"
-            >
-              {SORT_OPTIONS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+            {/* Baths */}
+            <div>
+              <label className="block text-xs text-[#94a3b8] mb-1">Baths</label>
+              <div className="flex gap-1">
+                {BATH_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => pushFilters({ baths: bathValue(opt) })}
+                    className={`px-2.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      baths === bathValue(opt)
+                        ? "bg-[#c9a962] text-[#0a0a0f]"
+                        : "bg-[#161620] border border-[#2a2a3a] text-[#94a3b8] hover:border-[#c9a962]"
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Property Type */}
+            <div>
+              <label className="block text-xs text-[#94a3b8] mb-1">Type</label>
+              <select
+                value={propertyType}
+                onChange={(e) => pushFilters({ type: e.target.value })}
+                className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962] appearance-none cursor-pointer"
+              >
+                {PROPERTY_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Sort */}
+            <div>
+              <label className="block text-xs text-[#94a3b8] mb-1">Sort</label>
+              <select
+                value={sort}
+                onChange={(e) => pushFilters({ sort: e.target.value })}
+                className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962] appearance-none cursor-pointer"
+              >
+                {SORT_OPTIONS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>

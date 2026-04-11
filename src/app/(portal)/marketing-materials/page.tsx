@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
 import type { Property, Profile } from "@/lib/types";
 import SocialCardGenerator from "@/components/marketing/SocialCardGenerator";
+import FlyerGenerator from "@/components/marketing/FlyerGenerator";
 import PropertyWebsite from "@/components/marketing/PropertyWebsite";
 import QRCodeGenerator from "@/components/marketing/QRCodeGenerator";
 
@@ -49,6 +50,7 @@ export default function MarketingMaterialsPage() {
     ? `${profile.first_name} ${profile.last_name}`.trim()
     : "";
   const agentPhone = profile?.phone ?? "";
+  const agentEmail = profile?.email ?? "";
   const brokerageName = profile?.brokerage_name ?? "";
 
   return (
@@ -124,11 +126,13 @@ export default function MarketingMaterialsPage() {
               />
             )}
             {activeTab === "pdf" && (
-              <div className="bg-[#1c1c2e] rounded-lg p-12 text-center">
-                <p className="text-[#94a3b8]">
-                  PDF Flyer generation coming soon.
-                </p>
-              </div>
+              <FlyerGenerator
+                property={selectedProperty}
+                agentName={agentName}
+                agentPhone={agentPhone}
+                agentEmail={agentEmail}
+                brokerageName={brokerageName}
+              />
             )}
             {activeTab === "website" && (
               <PropertyWebsite property={selectedProperty} />

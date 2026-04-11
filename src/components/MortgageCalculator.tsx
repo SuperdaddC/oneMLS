@@ -32,6 +32,32 @@ export default function MortgageCalculator({ propertyPrice }: MortgageCalculator
     const monthlyInsurance = (homePrice * 0.0035) / 12;
     const totalMonthly = monthlyPI + monthlyTax + monthlyInsurance;
 
+    // APR calculation using Newton's method
+    const aprFees = 10000;
+    let apr = interestRate;
+    if (loanAmount > 0 && interestRate > 0) {
+      const netLoan = loanAmount - aprFees;
+      if (netLoan > 0) {
+        const payment =
+          (loanAmount * monthlyRate) /
+          (1 - Math.pow(1 + monthlyRate, -numPayments));
+        let aprGuess = interestRate / 100 / 12;
+        for (let iter = 0; iter < 100; iter++) {
+          let pv = 0,
+            dpv = 0;
+          for (let m = 1; m <= numPayments; m++) {
+            const disc = Math.pow(1 + aprGuess, -m);
+            pv += payment * disc;
+            dpv -= (m * payment * disc) / (1 + aprGuess);
+          }
+          const diff = pv - netLoan;
+          if (Math.abs(diff) < 0.01) break;
+          aprGuess -= diff / dpv;
+        }
+        apr = Math.round(aprGuess * 12 * 100 * 1000) / 1000;
+      }
+    }
+
     return {
       monthlyPI,
       monthlyTax,
@@ -39,6 +65,7 @@ export default function MortgageCalculator({ propertyPrice }: MortgageCalculator
       totalMonthly,
       downPayment,
       loanAmount,
+      apr,
     };
   }, [homePrice, downPaymentPercent, interestRate, loanTerm]);
 
@@ -157,6 +184,9 @@ export default function MortgageCalculator({ propertyPrice }: MortgageCalculator
                 %
               </span>
             </div>
+            <p className="mt-1.5 text-xs text-[#94a3b8]">
+              APR: {calculations.apr.toFixed(3)}%
+            </p>
           </div>
 
           {/* Loan Term Toggle */}
