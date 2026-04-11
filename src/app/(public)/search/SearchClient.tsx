@@ -98,9 +98,11 @@ function SearchClientInner({
   const searchParams = useSearchParams();
 
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
+  const [searchInput, setSearchInput] = useState("");
 
   /* derive current filter state from URL (or initial) */
   const query = searchParams.get("q") ?? initialFilters.query ?? "";
+  const stateParam = searchParams.get("state") ?? "";
   const minPrice = searchParams.get("minPrice") ?? "";
   const maxPrice = searchParams.get("maxPrice") ?? "";
   const beds = searchParams.get("beds") ?? "";
@@ -158,27 +160,49 @@ function SearchClientInner({
       {/* -------- FILTER BAR -------- */}
       <div className="bg-[#1c1c2e] border-b border-[#2a2a3a] px-4 py-3">
         <div className="max-w-[1800px] mx-auto space-y-3">
-          {/* Row 1: Search input (full width) */}
+          {/* Row 1: Search input with button */}
           <div className="w-full">
-            <label className="block text-xs text-[#94a3b8] mb-1">Search</label>
-            <div className="relative">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                type="text"
-                placeholder="City, state, address, or MLS ID..."
-                defaultValue={query}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const val = (e.target as HTMLInputElement).value;
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="City, state, address, or MLS ID..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = searchInput.trim();
+                      if (!val) {
+                        pushFilters({ q: "", state: "" });
+                      } else {
+                        const stateCode = resolveStateCode(val);
+                        if (stateCode) {
+                          pushFilters({ q: "", state: stateCode });
+                        } else {
+                          pushFilters({ q: val, state: "" });
+                        }
+                      }
+                    }
+                  }}
+                  className="w-full pl-10 pr-3 py-2.5 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white placeholder-[#94a3b8] text-sm focus:outline-none focus:border-[#c9a962]"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  const val = searchInput.trim();
+                  if (!val) {
+                    pushFilters({ q: "", state: "" });
+                  } else {
                     const stateCode = resolveStateCode(val);
                     if (stateCode) {
                       pushFilters({ q: "", state: stateCode });
@@ -187,9 +211,27 @@ function SearchClientInner({
                     }
                   }
                 }}
-                className="w-full pl-10 pr-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white placeholder-[#94a3b8] text-sm focus:outline-none focus:border-[#c9a962]"
-              />
+                className="px-6 py-2.5 bg-[#c9a962] hover:bg-[#d4b872] text-[#0a0a0f] font-semibold rounded-lg text-sm transition-colors whitespace-nowrap"
+              >
+                Search
+              </button>
+              {(query || stateParam) && (
+                <button
+                  onClick={() => {
+                    setSearchInput("");
+                    pushFilters({ q: "", state: "" });
+                  }}
+                  className="px-4 py-2.5 bg-[#161620] border border-[#2a2a3a] hover:border-[#94a3b8] text-[#94a3b8] rounded-lg text-sm transition-colors whitespace-nowrap"
+                >
+                  Clear
+                </button>
+              )}
             </div>
+            {stateParam && (
+              <div className="mt-2 text-sm text-[#94a3b8]">
+                Showing results for: <span className="text-[#c9a962] font-medium">{stateParam}</span>
+              </div>
+            )}
           </div>
 
           {/* Row 2: Filters */}
