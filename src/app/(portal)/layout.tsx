@@ -18,6 +18,7 @@ const pageTitles: Record<string, string> = {
   "/library": "Library",
   "/trades": "Trades Directory",
   "/profile": "Profile",
+  "/analytics": "Listing Analytics",
 };
 
 export default function PortalLayout({

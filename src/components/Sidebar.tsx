@@ -121,6 +121,14 @@ const BookIcon = () => (
   </svg>
 );
 
+const BarChartIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="10" width="3" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="7.5" y="6" width="3" height="10" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="13" y="2" width="3" height="14" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
 const BuildingIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="2" y="2" width="14" height="14" rx="1" stroke="currentColor" strokeWidth="1.5" />
@@ -177,6 +185,7 @@ const sections: NavSection[] = [
   {
     title: "RESOURCES",
     items: [
+      { label: "Analytics", href: "/analytics", icon: <BarChartIcon /> },
       { label: "CMA", href: "/cma", icon: <ChartIcon /> },
       { label: "E Contracts", href: "/e-contracts", icon: <DocumentIcon /> },
       { label: "Marketing Materials", href: "/marketing-materials", icon: <MegaphoneIcon /> },

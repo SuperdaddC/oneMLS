@@ -151,3 +151,20 @@ export interface OpenHouse {
   created_at: string
   property?: Property
 }
+
+export interface PropertyView {
+  id: string
+  property_id: string
+  viewer_id: string | null
+  source: string
+  created_at: string
+}
+
+export interface PropertyEvent {
+  id: string
+  property_id: string
+  event_type: 'share' | 'save' | 'contact' | 'showing_request' | 'flyer_download' | 'social_card_download' | 'qr_download'
+  user_id: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+}

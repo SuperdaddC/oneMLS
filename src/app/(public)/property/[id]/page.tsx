@@ -9,6 +9,7 @@ import ShareButton from "@/components/ShareButton";
 import PropertyCard from "@/components/PropertyCard";
 import PropertyMapWrapper from "@/components/PropertyMapWrapper";
 import FavoriteButton from "@/components/FavoriteButton";
+import ViewTracker from "@/components/ViewTracker";
 
 /* ---------- Helpers ---------- */
 
@@ -134,6 +135,7 @@ export default async function PropertyDetailPage({
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-[#f8fafc]">
+      <ViewTracker propertyId={property.id} />
       {/* Navigation bar */}
       <nav className="sticky top-0 z-50 border-b border-[#2a2a3a] bg-[#0a0a0f]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
