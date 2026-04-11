@@ -168,3 +168,37 @@ export interface PropertyEvent {
   metadata: Record<string, unknown>
   created_at: string
 }
+
+export type NotificationType =
+  | 'showing_request'
+  | 'showing_approved'
+  | 'showing_denied'
+  | 'new_message'
+  | 'listing_view_milestone'
+  | 'open_house_reminder'
+  | 'price_change'
+  | 'new_save'
+  | 'new_lead'
+  | 'system'
+
+export interface Notification {
+  id: string
+  user_id: string
+  type: NotificationType
+  title: string
+  body: string
+  link: string | null
+  read: boolean
+  created_at: string
+}
+
+export interface NotificationPreferences {
+  user_id: string
+  email_showing_requests: boolean
+  email_messages: boolean
+  email_listing_views: boolean
+  email_open_house_reminders: boolean
+  email_new_saves: boolean
+  email_marketing_tips: boolean
+  push_enabled: boolean
+}

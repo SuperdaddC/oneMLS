@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import NotificationBell from "@/components/NotificationBell";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -19,6 +20,8 @@ const pageTitles: Record<string, string> = {
   "/trades": "Trades Directory",
   "/profile": "Profile",
   "/analytics": "Listing Analytics",
+  "/notifications": "Notifications",
+  "/notifications/preferences": "Notification Preferences",
 };
 
 export default function PortalLayout({
@@ -51,32 +54,7 @@ export default function PortalLayout({
           {/* Right side icons */}
           <div className="flex items-center gap-4">
             {/* Notification bell */}
-            <button className="relative p-2 rounded-lg hover:bg-gray-700/50 transition-colors">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M10 2C7.23858 2 5 4.23858 5 7V10L3 13H17L15 10V7C15 4.23858 12.7614 2 10 2Z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M8 16C8 17.1046 8.89543 18 10 18C11.1046 18 12 17.1046 12 16"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-              {/* Red badge */}
-              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                3
-              </span>
-            </button>
+            <NotificationBell />
 
             {/* Settings gear */}
             <button
