@@ -38,7 +38,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/purchase-leads') ||
     request.nextUrl.pathname.startsWith('/library') ||
     request.nextUrl.pathname.startsWith('/trades') ||
-    request.nextUrl.pathname.startsWith('/profile')
+    request.nextUrl.pathname.startsWith('/profile') ||
+    request.nextUrl.pathname.startsWith('/open-houses')
 
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()

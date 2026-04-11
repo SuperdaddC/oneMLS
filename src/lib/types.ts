@@ -138,3 +138,16 @@ export interface SavedSearch {
   criteria: Record<string, unknown>
   notification_frequency: 'instant' | 'daily' | 'weekly' | 'never'
 }
+
+export interface OpenHouse {
+  id: string
+  property_id: string
+  agent_id: string
+  event_date: string
+  start_time: string
+  end_time: string
+  notes: string | null
+  status: 'scheduled' | 'cancelled' | 'completed'
+  created_at: string
+  property?: Property
+}

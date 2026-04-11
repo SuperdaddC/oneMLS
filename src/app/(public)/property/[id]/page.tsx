@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { getPropertyById, getSimilarProperties } from "@/lib/queries";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import PhotoGallery from "@/components/PhotoGallery";
 import MortgageCalculator from "@/components/MortgageCalculator";
 import ShareButton from "@/components/ShareButton";
@@ -25,6 +26,24 @@ function formatNumber(n: number) {
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function formatTime12h(time: string) {
+  const [h, m] = time.split(":");
+  const hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${hour12}:${m} ${ampm}`;
+}
+
+function formatEventDate(dateStr: string) {
+  const date = new Date(dateStr + "T12:00:00");
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -94,6 +113,15 @@ export default async function PropertyDetailPage({
     notFound();
   }
 
+  const supabase = await createServerSupabaseClient();
+  const { data: openHouses } = await supabase
+    .from('open_houses')
+    .select('*')
+    .eq('property_id', id)
+    .eq('status', 'scheduled')
+    .gte('event_date', new Date().toISOString().split('T')[0])
+    .order('event_date', { ascending: true });
+
   const similarProperties = await getSimilarProperties(property, 3);
   const owner = property.owner;
   const fullAddress = `${property.address}, ${property.city}, ${property.state} ${property.zip}`;
@@ -129,6 +157,36 @@ export default async function PropertyDetailPage({
         <section className="animate-fade-in">
           <PhotoGallery photos={property.photos || []} />
         </section>
+
+        {/* ===== Open House Banner ===== */}
+        {openHouses && openHouses.length > 0 && (
+          <section className="mt-6 animate-fade-in overflow-hidden rounded-2xl" style={{ background: "linear-gradient(135deg, #c9a962 0%, #d4b872 100%)" }}>
+            <div className="px-5 py-4 sm:px-6">
+              {openHouses.map((oh: { id: string; event_date: string; start_time: string; end_time: string; notes: string | null }) => (
+                <div key={oh.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6 py-1">
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="2" y="3" width="16" height="15" rx="2" stroke="#0a0a0f" strokeWidth="1.5" />
+                      <path d="M2 8H18" stroke="#0a0a0f" strokeWidth="1.5" />
+                      <path d="M7 1V4" stroke="#0a0a0f" strokeWidth="1.5" strokeLinecap="round" />
+                      <path d="M13 1V4" stroke="#0a0a0f" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    <span className="text-sm font-bold text-[#0a0a0f] uppercase tracking-wide" style={{ animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite" }}>
+                      Open House
+                    </span>
+                  </div>
+                  <div className="text-sm font-semibold text-[#0a0a0f]">
+                    {formatEventDate(oh.event_date)} &middot; {formatTime12h(oh.start_time)} - {formatTime12h(oh.end_time)}
+                  </div>
+                  {oh.notes && (
+                    <div className="text-sm text-[#0a0a0f]/75 italic">{oh.notes}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }`}</style>
+          </section>
+        )}
 
         {/* ===== B. Highlights Bar ===== */}
         <section className="mt-6 animate-fade-in rounded-2xl border border-[#2a2a3a] bg-[#161620] p-5 sm:p-6">

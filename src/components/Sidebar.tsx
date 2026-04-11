@@ -43,6 +43,17 @@ const CalendarIcon = () => (
   </svg>
 );
 
+const CalendarClockIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="3" width="14" height="13" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M2 7H16" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M6 1V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M12 1V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="9" cy="12" r="2" stroke="currentColor" strokeWidth="1.2" />
+    <path d="M9 11V12L10 12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const ChatIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M3 2H15C15.5523 2 16 2.44772 16 3V12C16 12.5523 15.5523 13 15 13H6L2 16V3C2 2.44772 2.44772 2 3 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
@@ -158,6 +169,7 @@ const sections: NavSection[] = [
       { label: "Dashboard", href: "/dashboard", icon: <DashboardIcon /> },
       { label: "My Listings", href: "/my-listings", icon: <HomeIcon />, badge: "STATUS_COUNTS", badgeType: "status" as const },
       { label: "Saved", href: "/saved", icon: <HeartIcon />, badge: "SAVED_COUNT", badgeType: "count" as const },
+      { label: "Open Houses", href: "/open-houses", icon: <CalendarClockIcon />, badge: "OPEN_HOUSE_COUNT", badgeType: "count" as const },
       { label: "Showings", href: "/showings", icon: <CalendarIcon />, badge: "3", badgeType: "count" },
       { label: "Messages", href: "/messages", icon: <ChatIcon />, badge: "2", badgeType: "count" },
     ],
@@ -303,6 +315,7 @@ export default function Sidebar() {
   const [user, setUser] = useState<User | null>(null);
   const [statusCounts, setStatusCounts] = useState<StatusCounts>({ draft: 0, active: 0, pending: 0, withdrawn: 0 });
   const [savedCount, setSavedCount] = useState(0);
+  const [openHouseCount, setOpenHouseCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -328,6 +341,15 @@ export default function Sidebar() {
           .eq("user_id", data.user.id)
           .then(({ count }) => {
             setSavedCount(count ?? 0);
+          });
+        supabase
+          .from("open_houses")
+          .select("id", { count: "exact", head: true })
+          .eq("agent_id", data.user.id)
+          .eq("status", "scheduled")
+          .gte("event_date", new Date().toISOString().split("T")[0])
+          .then(({ count }) => {
+            setOpenHouseCount(count ?? 0);
           });
       }
     });
@@ -439,6 +461,27 @@ export default function Sidebar() {
                   <StatusBadges counts={statusCounts} onClickStatus={(s) => router.push(`/my-listings?status=${s}`)} />
                 ) : item.badge && item.badge === "SAVED_COUNT" ? (
                   savedCount > 0 ? <Badge text={String(savedCount)} type="count" /> : null
+                ) : item.badge && item.badge === "OPEN_HOUSE_COUNT" ? (
+                  openHouseCount > 0 ? (
+                    <span
+                      style={{
+                        backgroundColor: "#f59e0b",
+                        color: "#000",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        borderRadius: "9999px",
+                        minWidth: "20px",
+                        height: "20px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "0 6px",
+                        lineHeight: 1,
+                      }}
+                    >
+                      {openHouseCount}
+                    </span>
+                  ) : null
                 ) : item.badge && item.badgeType ? (
                   <Badge text={item.badge} type={item.badgeType as "count" | "soon"} />
                 ) : null}
