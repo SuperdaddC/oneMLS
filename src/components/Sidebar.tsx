@@ -164,6 +164,14 @@ const CartIcon = () => (
   </svg>
 );
 
+const SavedSearchIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="8" cy="8" r="5" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M13 13L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M8 6l1 2 2.5.3-1.8 1.7.4 2.5L8 11.2 5.9 12.5l.4-2.5L4.5 8.3 7 8z" fill="currentColor" />
+  </svg>
+);
+
 const HeartIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -177,6 +185,7 @@ const sections: NavSection[] = [
       { label: "Dashboard", href: "/dashboard", icon: <DashboardIcon /> },
       { label: "My Listings", href: "/my-listings", icon: <HomeIcon />, badge: "STATUS_COUNTS", badgeType: "status" as const },
       { label: "Saved", href: "/saved", icon: <HeartIcon />, badge: "SAVED_COUNT", badgeType: "count" as const },
+      { label: "Saved Searches", href: "/saved-searches", icon: <SavedSearchIcon /> },
       { label: "Open Houses", href: "/open-houses", icon: <CalendarClockIcon />, badge: "OPEN_HOUSE_COUNT", badgeType: "count" as const },
       { label: "Showings", href: "/showings", icon: <CalendarIcon />, badge: "3", badgeType: "count" },
       { label: "Messages", href: "/messages", icon: <ChatIcon />, badge: "2", badgeType: "count" },

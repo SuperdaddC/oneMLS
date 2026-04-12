@@ -11,6 +11,10 @@ import PropertyMapWrapper from "@/components/PropertyMapWrapper";
 import FavoriteButton from "@/components/FavoriteButton";
 import ViewTracker from "@/components/ViewTracker";
 import PriceHistoryChart from "@/components/PriceHistoryChart";
+import WalkScore from "@/components/WalkScore";
+import SchoolRatings from "@/components/SchoolRatings";
+import NeighborhoodInfo from "@/components/NeighborhoodInfo";
+import PrintButton from "@/components/PrintButton";
 
 /* ---------- Helpers ---------- */
 
@@ -138,7 +142,7 @@ export default async function PropertyDetailPage({
     <div className="min-h-screen bg-[#0a0a0f] text-[#f8fafc]">
       <ViewTracker propertyId={property.id} />
       {/* Navigation bar */}
-      <nav className="sticky top-0 z-50 border-b border-[#2a2a3a] bg-[#0a0a0f]/80 backdrop-blur-xl">
+      <nav data-print-hide className="sticky top-0 z-50 border-b border-[#2a2a3a] bg-[#0a0a0f]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <a href="/" className="text-xl font-extrabold tracking-wider text-white">
             one<span className="text-[#c9a962]">MLS</span>
@@ -234,8 +238,9 @@ export default async function PropertyDetailPage({
             {/* Right: CTA buttons */}
             <div className="flex flex-shrink-0 items-center gap-3">
               <FavoriteButton propertyId={property.id} size="lg" />
-              <ShareButton />
-              <button className="rounded-lg bg-[#c9a962] px-6 py-2.5 text-sm font-semibold text-[#0a0a0f] transition-colors hover:bg-[#d4b872]">
+              <PrintButton />
+              <span data-print-hide><ShareButton /></span>
+              <button data-print-hide className="rounded-lg bg-[#c9a962] px-6 py-2.5 text-sm font-semibold text-[#0a0a0f] transition-colors hover:bg-[#d4b872]">
                 Schedule Showing
               </button>
             </div>
@@ -450,7 +455,9 @@ export default async function PropertyDetailPage({
             </div>
 
             {/* Mortgage Calculator */}
-            <MortgageCalculator propertyPrice={property.price} />
+            <div className="no-print">
+              <MortgageCalculator propertyPrice={property.price} />
+            </div>
 
             {/* Share */}
             <div className="rounded-xl border border-[#2a2a3a] bg-[#161620] p-5">
@@ -463,7 +470,7 @@ export default async function PropertyDetailPage({
         </div>
 
         {/* ===== D. Map Section ===== */}
-        <section className="mt-12 animate-fade-in">
+        <section className="mt-12 animate-fade-in no-print">
           <h2 className="mb-4 text-xl font-bold text-white">Location</h2>
           <PropertyMapWrapper
             lat={property.lat}
@@ -473,9 +480,38 @@ export default async function PropertyDetailPage({
           <p className="mt-3 text-sm text-[#94a3b8]">{fullAddress}</p>
         </section>
 
+        {/* ===== Walk Score ===== */}
+        <section className="mt-12 animate-fade-in">
+          <WalkScore
+            lat={property.lat}
+            lng={property.lng}
+            city={property.city}
+            state={property.state}
+          />
+        </section>
+
+        {/* ===== School Ratings ===== */}
+        <section className="mt-12 animate-fade-in">
+          <SchoolRatings
+            city={property.city}
+            state={property.state}
+            zip={property.zip}
+          />
+        </section>
+
+        {/* ===== Neighborhood Info ===== */}
+        <section className="mt-12 animate-fade-in">
+          <NeighborhoodInfo
+            city={property.city}
+            state={property.state}
+            lat={property.lat}
+            lng={property.lng}
+          />
+        </section>
+
         {/* ===== E. Similar Properties ===== */}
         {similarProperties.length > 0 && (
-          <section className="mt-12 animate-fade-in">
+          <section className="mt-12 animate-fade-in no-print">
             <h2 className="mb-6 text-xl font-bold text-white">Similar Properties</h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {similarProperties.map((p) => (
@@ -490,7 +526,7 @@ export default async function PropertyDetailPage({
       </main>
 
       {/* ===== F. Footer ===== */}
-      <footer className="border-t border-[#2a2a3a] bg-[#161620]">
+      <footer data-print-hide className="border-t border-[#2a2a3a] bg-[#161620]">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <p className="text-xl font-extrabold tracking-wider text-white">

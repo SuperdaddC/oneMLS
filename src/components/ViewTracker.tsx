@@ -14,6 +14,16 @@ export default function ViewTracker({ propertyId, source = "direct" }: { propert
       });
     };
     record();
+
+    // Save to recently viewed in localStorage
+    try {
+      const stored = JSON.parse(localStorage.getItem("onemls_recently_viewed") || "[]");
+      const entry = { id: propertyId, timestamp: Date.now() };
+      const updated = [entry, ...stored.filter((e: { id: string }) => e.id !== propertyId)].slice(0, 10);
+      localStorage.setItem("onemls_recently_viewed", JSON.stringify(updated));
+    } catch {
+      // localStorage may not be available
+    }
   }, [propertyId, source]);
   return null;
 }

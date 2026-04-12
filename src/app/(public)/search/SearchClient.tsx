@@ -1,10 +1,13 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useCallback, useMemo, Suspense } from "react";
+import { useState, useCallback, useMemo, useEffect, Suspense } from "react";
 import dynamic from "next/dynamic";
 import PropertyCard from "@/components/PropertyCard";
+import RecentlyViewed from "@/components/RecentlyViewed";
+import { createClient } from "@/lib/supabase";
 import type { Property, Profile } from "@/lib/types";
+import type { User } from "@supabase/supabase-js";
 
 /* ---------- types ---------- */
 type PropertyWithOwner = Property & { owner?: Profile };
@@ -99,6 +102,18 @@ function SearchClientInner({
 
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
   const [searchInput, setSearchInput] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showLoginTooltip, setShowLoginTooltip] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [saveFrequency, setSaveFrequency] = useState<"instant" | "daily" | "weekly" | "never">("daily");
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
+  }, []);
 
   /* derive current filter state from URL (or initial) */
   const query = searchParams.get("q") ?? initialFilters.query ?? "";
@@ -139,6 +154,56 @@ function SearchClientInner({
 
   const properties = initialProperties;
   const total = initialTotal;
+
+  /* check if search has active filters */
+  const hasActiveFilters = !!(query || stateParam || minPrice || maxPrice || beds || baths || propertyType);
+
+  /* generate a default search name from current filters */
+  const generateSearchName = useCallback(() => {
+    const parts: string[] = [];
+    if (query) parts.push(query);
+    if (stateParam) parts.push(stateParam);
+    const formatP = (v: string) => {
+      const n = Number(v);
+      return n >= 1000000 ? `$${n / 1000000}M` : `$${n / 1000}K`;
+    };
+    if (minPrice || maxPrice) {
+      parts.push(`${minPrice ? formatP(minPrice) : "$0"}-${maxPrice ? formatP(maxPrice) : "Any"}`);
+    }
+    if (beds) parts.push(`${beds}+ beds`);
+    if (baths) parts.push(`${baths}+ baths`);
+    if (propertyType) {
+      const t = PROPERTY_TYPES.find((pt) => pt.value === propertyType);
+      if (t) parts.push(t.label);
+    }
+    return parts.length > 0 ? parts.join(" - ") : "My Search";
+  }, [query, stateParam, minPrice, maxPrice, beds, baths, propertyType]);
+
+  const handleSaveSearch = async () => {
+    if (!user) return;
+    setSaving(true);
+    const supabase = createClient();
+    const criteria = {
+      ...(query && { q: query }),
+      ...(stateParam && { state: stateParam }),
+      ...(minPrice && { minPrice }),
+      ...(maxPrice && { maxPrice }),
+      ...(beds && { beds }),
+      ...(baths && { baths }),
+      ...(propertyType && { type: propertyType }),
+      ...(sort !== "newest" && { sort }),
+    };
+    await supabase.from("saved_searches").insert({
+      user_id: user.id,
+      name: saveName || generateSearchName(),
+      criteria,
+      notification_frequency: saveFrequency,
+    });
+    setSaving(false);
+    setShowSaveModal(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
 
   /* format price for markers */
   const markers = useMemo(
@@ -356,13 +421,99 @@ function SearchClientInner({
               mobileView === "map" ? "hidden lg:block" : ""
             }`}
           >
-            {/* Results count */}
-            <div className="mb-4">
+            {/* Recently Viewed - show when no active search query */}
+            {!hasActiveFilters && (
+              <div className="mb-6">
+                <RecentlyViewed />
+              </div>
+            )}
+
+            {/* Results count + Save Search */}
+            <div className="mb-4 flex items-center justify-between">
               <h2 className="text-white text-lg font-semibold">
                 {total.toLocaleString()} propert{total === 1 ? "y" : "ies"}{" "}
                 found
               </h2>
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      setShowLoginTooltip(true);
+                      setTimeout(() => setShowLoginTooltip(false), 2500);
+                      return;
+                    }
+                    setSaveName(generateSearchName());
+                    setSaveFrequency("daily");
+                    setShowSaveModal(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-[#2a2a3a] bg-[#161620] text-[#c9a962] hover:border-[#c9a962] transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+                  </svg>
+                  Save This Search
+                </button>
+                {/* Login tooltip */}
+                {showLoginTooltip && (
+                  <div className="absolute right-0 top-full mt-2 z-50 rounded-lg bg-[#1c1c2e] border border-[#2a2a3a] px-4 py-2 text-sm text-[#94a3b8] whitespace-nowrap shadow-lg">
+                    Log in to save searches
+                  </div>
+                )}
+                {/* Save search modal */}
+                {showSaveModal && (
+                  <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-xl bg-[#1c1c2e] border border-[#2a2a3a] p-5 shadow-xl">
+                    <h3 className="text-white font-semibold mb-3">Save Search</h3>
+                    <div className="mb-3">
+                      <label className="block text-xs text-[#94a3b8] mb-1">Name</label>
+                      <input
+                        type="text"
+                        value={saveName}
+                        onChange={(e) => setSaveName(e.target.value)}
+                        className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962]"
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-xs text-[#94a3b8] mb-2">Alert Frequency</label>
+                      <div className="space-y-2">
+                        {(["instant", "daily", "weekly", "never"] as const).map((freq) => (
+                          <label key={freq} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="frequency"
+                              checked={saveFrequency === freq}
+                              onChange={() => setSaveFrequency(freq)}
+                              className="accent-[#c9a962]"
+                            />
+                            <span className="text-sm text-white capitalize">{freq}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveSearch}
+                        disabled={saving}
+                        className="flex-1 px-4 py-2 bg-[#c9a962] hover:bg-[#d4b872] text-[#0a0a0f] font-semibold rounded-lg text-sm transition-colors disabled:opacity-50"
+                      >
+                        {saving ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        onClick={() => setShowSaveModal(false)}
+                        className="px-4 py-2 bg-[#161620] border border-[#2a2a3a] text-[#94a3b8] rounded-lg text-sm hover:border-[#94a3b8] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+            {/* Success toast */}
+            {saveSuccess && (
+              <div className="mb-4 px-4 py-2 bg-green-900/40 border border-green-700 rounded-lg text-green-300 text-sm">
+                Search saved!
+              </div>
+            )}
 
             {properties.length === 0 ? (
               <div className="text-center py-20">

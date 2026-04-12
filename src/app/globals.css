@@ -710,6 +710,18 @@ body {
   animation: fadeIn 0.4s ease-out;
 }
 
+/* Scrollbar utility for horizontal scroll */
+.scrollbar-thin::-webkit-scrollbar {
+  height: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
 /* Pulse dot for notifications */
 @keyframes pulse-dot {
   0%,
@@ -723,4 +735,30 @@ body {
 
 .pulse-dot {
   animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* =============================================
+   PRINT STYLES
+   ============================================= */
+
+@media print {
+  /* Hide interactive elements */
+  .portal-sidebar, .portal-header, .public-nav, footer,
+  [data-print-hide] { display: none !important; }
+
+  /* Reset backgrounds for printing */
+  body, main, div { background: white !important; color: black !important; }
+
+  /* Ensure images print */
+  img { max-width: 100% !important; }
+
+  /* Property page specific */
+  .property-highlights { background: #f5f5f5 !important; color: black !important; }
+  .property-price { color: #1a1a1a !important; }
+
+  /* Hide map, calculator, share button in print */
+  .no-print { display: none !important; }
+
+  /* Force page breaks */
+  .print-break-before { page-break-before: always; }
 }
