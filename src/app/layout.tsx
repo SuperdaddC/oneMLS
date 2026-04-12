@@ -15,6 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "HomeStar Properties",
   description: "OneMLS Agent Portal - Your complete real estate management platform",
+  manifest: "/manifest.json",
+  themeColor: "#c9a962",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export default function RootLayout({

@@ -171,6 +171,14 @@ const CartIcon = () => (
   </svg>
 );
 
+const CodeIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6 5L2 9L6 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12 5L16 9L12 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10 3L8 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+
 const SavedSearchIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="8" cy="8" r="5" stroke="currentColor" strokeWidth="1.5" />
@@ -182,6 +190,21 @@ const SavedSearchIcon = () => (
 const FolderIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M2 4C2 3.44772 2.44772 3 3 3H7L9 5H15C15.5523 5 16 5.44772 16 6V14C16 14.5523 15.5523 15 15 15H3C2.44772 15 2 14.5523 2 14V4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+  </svg>
+);
+
+const ShieldIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M9 1L2 4.5V9C2 13.14 4.94 16.92 9 18C13.06 16.92 16 13.14 16 9V4.5L9 1Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    <path d="M6.5 9L8 10.5L11.5 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const CreditCardNavIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="3" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M1 7H17" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M5 11H8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 );
 
@@ -244,6 +267,7 @@ const sections: NavSection[] = [
       { label: "Showing Service", href: "/showing-service", icon: <KeyIcon /> },
       { label: "Referrals", href: "/referrals", icon: <ReferralIcon />, badge: "SOON", badgeType: "soon" },
       { label: "Purchase Leads", href: "/purchase-leads", icon: <CartIcon />, badge: "SOON", badgeType: "soon" },
+      { label: "API Docs", href: "/api-docs", icon: <CodeIcon /> },
     ],
   },
   {
@@ -270,6 +294,7 @@ const sections: NavSection[] = [
 ];
 
 const accountItems: NavItem[] = [
+  { label: "Billing", href: "/billing", icon: <CreditCardNavIcon /> },
   { label: "Brand Kit", href: "/brand-kit", icon: <PaletteIcon /> },
   { label: "Profile", href: "/profile", icon: <UserIcon /> },
   { label: "Help Center", href: "#", icon: <HelpIcon /> },
@@ -378,12 +403,21 @@ export default function Sidebar() {
   const [statusCounts, setStatusCounts] = useState<StatusCounts>({ draft: 0, active: 0, pending: 0, withdrawn: 0 });
   const [savedCount, setSavedCount] = useState(0);
   const [openHouseCount, setOpenHouseCount] = useState(0);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       if (data.user) {
+        supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .single()
+          .then(({ data: profile }) => {
+            if (profile) setUserRole(profile.role);
+          });
         supabase
           .from("properties")
           .select("status")
@@ -499,7 +533,12 @@ export default function Sidebar() {
 
       {/* Navigation sections */}
       <nav style={{ flex: 1, padding: "8px 12px", overflowY: "auto" }}>
-        {sections.map((section) => (
+        {sections.map((section) => {
+          const adminItem: NavItem = { label: "Admin", href: "/admin", icon: <ShieldIcon /> };
+          const sectionItems: NavItem[] = section.title === "MAIN" && userRole === "admin"
+            ? [adminItem, ...section.items]
+            : section.items;
+          return (
           <div key={section.title} style={{ marginBottom: "8px" }}>
             <div
               style={{
@@ -513,7 +552,7 @@ export default function Sidebar() {
             >
               {section.title}
             </div>
-            {section.items.map((item) => (
+            {sectionItems.map((item) => (
               <Link key={item.label} href={item.href} style={linkStyle(item.href)}>
                 <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
                   {item.icon}
@@ -550,7 +589,8 @@ export default function Sidebar() {
               </Link>
             ))}
           </div>
-        ))}
+          );
+        })}
 
         {/* My Account */}
         <div style={{ marginBottom: "8px" }}>

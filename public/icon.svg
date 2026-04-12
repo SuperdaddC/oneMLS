@@ -1,0 +1,23 @@
+<!--
+  OneMLS placeholder icon.
+  Generate proper PNG icons from this SVG:
+    - icon-192.png (192x192)
+    - icon-512.png (512x512)
+  Use a tool like Inkscape, Figma, or an online SVG-to-PNG converter.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0a0a0f"/>
+  <g transform="translate(256,240)">
+    <!-- House body -->
+    <path d="M-100,20 L-100,100 L100,100 L100,20 Z" fill="#1c1c2e" stroke="#c9a962" stroke-width="6"/>
+    <!-- Roof -->
+    <path d="M-130,20 L0,-80 L130,20 Z" fill="#1c1c2e" stroke="#c9a962" stroke-width="6" stroke-linejoin="round"/>
+    <!-- Door -->
+    <rect x="-20" y="50" width="40" height="50" rx="4" fill="#c9a962" opacity="0.8"/>
+    <!-- Windows -->
+    <rect x="-80" y="40" width="35" height="30" rx="3" fill="#c9a962" opacity="0.4"/>
+    <rect x="45" y="40" width="35" height="30" rx="3" fill="#c9a962" opacity="0.4"/>
+  </g>
+  <!-- Text -->
+  <text x="256" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="800" fill="#c9a962" letter-spacing="4">OneMLS</text>
+</svg>

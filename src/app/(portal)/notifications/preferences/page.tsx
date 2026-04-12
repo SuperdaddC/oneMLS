@@ -36,6 +36,108 @@ function Toggle({ label, description, checked, onChange }: ToggleProps) {
   );
 }
 
+function PushNotificationSection({
+  pushEnabled,
+  onToggle,
+}: {
+  pushEnabled: boolean;
+  onToggle: (val: boolean) => void;
+}) {
+  const [permissionStatus, setPermissionStatus] = useState<NotificationPermission | "unsupported">("default");
+  const [testSent, setTestSent] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setPermissionStatus(Notification.permission);
+    } else {
+      setPermissionStatus("unsupported");
+    }
+  }, []);
+
+  const requestPermission = async () => {
+    if (!("Notification" in window)) {
+      setPermissionStatus("unsupported");
+      return;
+    }
+    const result = await Notification.requestPermission();
+    setPermissionStatus(result);
+    if (result === "granted") {
+      new Notification("OneMLS", {
+        body: "Push notifications enabled!",
+        icon: "/icon-192.png",
+      });
+    }
+  };
+
+  const sendTestNotification = () => {
+    if (Notification.permission === "granted") {
+      new Notification("OneMLS Test", {
+        body: "This is a test notification from OneMLS.",
+        icon: "/icon-192.png",
+      });
+      setTestSent(true);
+      setTimeout(() => setTestSent(false), 3000);
+    }
+  };
+
+  return (
+    <div className="bg-[#1c1c2e] border border-[#2a2a3a] rounded-xl p-5 mb-6">
+      <h2 className="text-sm font-semibold text-[#c9a962] uppercase tracking-wider mb-2">
+        Push Notifications
+      </h2>
+      <Toggle
+        label="Enable push notifications"
+        description="Receive real-time notifications in your browser"
+        checked={pushEnabled}
+        onChange={onToggle}
+      />
+
+      {pushEnabled && (
+        <div className="mt-3 pt-3 border-t border-[#2a2a3a] space-y-3">
+          {permissionStatus === "unsupported" ? (
+            <p className="text-xs text-red-400">
+              Your browser does not support push notifications.
+            </p>
+          ) : permissionStatus === "granted" ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-400" />
+                <span className="text-sm text-green-400">Notifications enabled</span>
+              </div>
+              <button
+                onClick={sendTestNotification}
+                className="px-4 py-2 bg-[#2a2a3a] hover:bg-[#3a3a4a] text-white text-sm rounded-lg transition-colors"
+              >
+                {testSent ? "Test sent!" : "Send Test Notification"}
+              </button>
+            </>
+          ) : permissionStatus === "denied" ? (
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-400" />
+              <span className="text-sm text-red-400">
+                Notifications blocked. Please enable them in your browser settings.
+              </span>
+            </div>
+          ) : (
+            <button
+              onClick={requestPermission}
+              className="px-4 py-2 bg-[#c9a962] hover:bg-[#d4b872] text-black text-sm font-semibold rounded-lg transition-colors"
+            >
+              Allow Browser Notifications
+            </button>
+          )}
+        </div>
+      )}
+
+      {!pushEnabled && (
+        <p className="text-xs text-[#94a3b8] mt-2">
+          Push notifications are disabled.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function NotificationPreferencesPage() {
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,17 +281,10 @@ export default function NotificationPreferencesPage() {
       </div>
 
       {/* Push Notifications */}
-      <div className="bg-[#1c1c2e] border border-[#2a2a3a] rounded-xl p-5 mb-6">
-        <h2 className="text-sm font-semibold text-[#c9a962] uppercase tracking-wider mb-2">
-          Push Notifications
-        </h2>
-        <Toggle
-          label="Enable push notifications"
-          description="Receive real-time notifications in your browser"
-          checked={prefs.push_enabled}
-          onChange={(val) => updatePref("push_enabled", val)}
-        />
-      </div>
+      <PushNotificationSection
+        pushEnabled={prefs.push_enabled}
+        onToggle={(val) => updatePref("push_enabled", val)}
+      />
 
       {/* Save button */}
       <div className="flex items-center gap-3">
