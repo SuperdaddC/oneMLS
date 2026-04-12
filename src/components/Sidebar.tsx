@@ -201,6 +201,22 @@ const HeartIcon = () => (
   </svg>
 );
 
+const EmailIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="4" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M2 6L9 10L16 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const MarketUpdateIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="10" width="3" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="7.5" y="6" width="3" height="10" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="13" y="2" width="3" height="14" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M2 3L7 5L13 2L16 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const sections: NavSection[] = [
   {
     title: "MAIN",
@@ -223,6 +239,8 @@ const sections: NavSection[] = [
       { label: "CMA", href: "/cma", icon: <ChartIcon /> },
       { label: "E Contracts", href: "/e-contracts", icon: <DocumentIcon /> },
       { label: "Marketing Materials", href: "/marketing-materials", icon: <MegaphoneIcon /> },
+      { label: "Email Campaigns", href: "/email-campaigns", icon: <EmailIcon /> },
+      { label: "Market Updates", href: "/market-updates", icon: <MarketUpdateIcon /> },
       { label: "Showing Service", href: "/showing-service", icon: <KeyIcon /> },
       { label: "Referrals", href: "/referrals", icon: <ReferralIcon />, badge: "SOON", badgeType: "soon" },
       { label: "Purchase Leads", href: "/purchase-leads", icon: <CartIcon />, badge: "SOON", badgeType: "soon" },
