@@ -2,10 +2,22 @@
 
 import { useState } from "react";
 
+interface ApiSchool {
+  name: string;
+  rating: number;
+  distance: number;
+  type: string;
+  level: string;
+  enrollment: number;
+  grades: string;
+  url: string | null;
+}
+
 interface SchoolRatingsProps {
   city: string;
   state: string;
   zip: string;
+  apiData?: ApiSchool[] | null;
 }
 
 interface School {
@@ -15,6 +27,7 @@ interface School {
   type: "Public" | "Private";
   students: number;
   grades: string;
+  url?: string | null;
 }
 
 function hashStr(s: string): number {
@@ -85,11 +98,38 @@ function ratingColor(rating: number) {
   return "#ef4444";
 }
 
+function normalizeLevel(level: string): "Elementary" | "Middle" | "High" {
+  const l = level.toLowerCase();
+  if (l.includes("high") || l.includes("senior")) return "High";
+  if (l.includes("middle") || l.includes("junior") || l.includes("intermediate")) return "Middle";
+  return "Elementary";
+}
+
+function apiSchoolsForLevel(
+  apiData: ApiSchool[],
+  level: "Elementary" | "Middle" | "High"
+): School[] {
+  return apiData
+    .filter((s) => normalizeLevel(s.level) === level)
+    .map((s) => ({
+      name: s.name,
+      rating: s.rating ?? 0,
+      distance: typeof s.distance === "number" ? `${s.distance.toFixed(1)} mi` : String(s.distance),
+      type: (s.type === "Private" ? "Private" : "Public") as "Public" | "Private",
+      students: s.enrollment ?? 0,
+      grades: s.grades,
+      url: s.url,
+    }));
+}
+
 const tabs = ["Elementary", "Middle", "High"] as const;
 
-export default function SchoolRatings({ city, state, zip }: SchoolRatingsProps) {
+export default function SchoolRatings({ city, state, zip, apiData }: SchoolRatingsProps) {
   const [active, setActive] = useState<(typeof tabs)[number]>("Elementary");
-  const schools = generateSchools(city, zip, active);
+  const isLive = !!apiData && apiData.length > 0;
+  const schools = isLive
+    ? apiSchoolsForLevel(apiData!, active)
+    : generateSchools(city, zip, active);
 
   return (
     <div className="rounded-xl border border-[#2a2a3a] bg-[#161620] p-6">
@@ -141,9 +181,20 @@ export default function SchoolRatings({ city, state, zip }: SchoolRatingsProps) 
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white truncate">
-                  {school.name}
-                </p>
+                {school.url ? (
+                  <a
+                    href={school.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-semibold text-[#c9a962] hover:text-[#d4b872] truncate block transition-colors"
+                  >
+                    {school.name}
+                  </a>
+                ) : (
+                  <p className="text-sm font-semibold text-white truncate">
+                    {school.name}
+                  </p>
+                )}
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#94a3b8]">
                   <span>{school.type}</span>
                   <span>{school.grades}</span>
@@ -178,7 +229,9 @@ export default function SchoolRatings({ city, state, zip }: SchoolRatingsProps) 
       </div>
 
       <p className="mt-4 text-[10px] text-[#94a3b8]/60">
-        School data is estimated. Connect GreatSchools API for verified ratings.
+        {isLive
+          ? "Powered by GreatSchools"
+          : "School data is estimated. Connect GreatSchools API for verified ratings."}
       </p>
     </div>
   );

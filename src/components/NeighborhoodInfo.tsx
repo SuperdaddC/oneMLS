@@ -1,10 +1,17 @@
 "use client";
 
+interface CensusData {
+  medianIncome: number | null;
+  medianAge: number | null;
+  population: number | null;
+}
+
 interface NeighborhoodInfoProps {
   city: string;
   state: string;
   lat?: number | null;
   lng?: number | null;
+  censusData?: CensusData | null;
 }
 
 function hashStr(s: string): number {
@@ -102,8 +109,10 @@ export default function NeighborhoodInfo({
   state,
   lat,
   lng,
+  censusData,
 }: NeighborhoodInfoProps) {
   const data = generateNeighborhoodData(city, state, lat, lng);
+  const hasCensus = !!censusData;
 
   return (
     <div className="rounded-xl border border-[#2a2a3a] bg-[#161620] p-6">
@@ -142,8 +151,8 @@ export default function NeighborhoodInfo({
             </svg>
           }
           title="Dining & Shopping"
-          line1={`${data.restaurants} restaurants within 1 mile`}
-          line2={`${data.shops} shops nearby`}
+          line1={`~${data.restaurants} restaurants within 1 mile`}
+          line2={`~${data.shops} shops nearby`}
         />
         <InfoCard
           icon={
@@ -179,9 +188,17 @@ export default function NeighborhoodInfo({
               <path d="M16 3.13a4 4 0 010 7.75" />
             </svg>
           }
-          title="Demographics"
-          line1={`Median household income: $${data.medianIncome}K`}
-          line2={`Median age: ${data.medianAge}`}
+          title={hasCensus ? "Demographics (Census)" : "Demographics"}
+          line1={
+            hasCensus && censusData!.medianIncome
+              ? `Median household income: $${censusData!.medianIncome.toLocaleString()}`
+              : `Median household income: ~$${data.medianIncome}K`
+          }
+          line2={
+            hasCensus && censusData!.medianAge
+              ? `Median age: ${censusData!.medianAge}${censusData!.population ? ` | Pop: ${censusData!.population.toLocaleString()}` : ""}`
+              : `Median age: ~${data.medianAge}`
+          }
         />
       </div>
 
@@ -212,8 +229,9 @@ export default function NeighborhoodInfo({
       </div>
 
       <p className="mt-4 text-[10px] text-[#94a3b8]/60">
-        Neighborhood data is estimated. Connect local data APIs for verified
-        information.
+        {hasCensus
+          ? "Demographics powered by U.S. Census Bureau ACS. Dining, parks, commute, and safety data are estimates. Connect Yelp API for live data."
+          : "Neighborhood data is estimated. Connect local data APIs for verified information."}
       </p>
     </div>
   );

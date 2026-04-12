@@ -15,6 +15,7 @@ import WalkScore from "@/components/WalkScore";
 import SchoolRatings from "@/components/SchoolRatings";
 import NeighborhoodInfo from "@/components/NeighborhoodInfo";
 import PrintButton from "@/components/PrintButton";
+import { getWalkScore, getNearbySchools, getCensusData } from "@/lib/location-apis";
 
 /* ---------- Helpers ---------- */
 
@@ -131,6 +132,16 @@ export default async function PropertyDetailPage({
   const similarProperties = await getSimilarProperties(property, 3);
   const owner = property.owner;
   const fullAddress = `${property.address}, ${property.city}, ${property.state} ${property.zip}`;
+
+  const [walkScoreData, schoolsData, censusData] = await Promise.all([
+    property.lat && property.lng
+      ? getWalkScore(property.lat, property.lng, fullAddress)
+      : null,
+    property.lat && property.lng
+      ? getNearbySchools(property.lat, property.lng)
+      : null,
+    getCensusData(property.zip),
+  ]);
   const ownerName = owner
     ? `${owner.first_name} ${owner.last_name}`
     : "Listing Agent";
@@ -487,6 +498,7 @@ export default async function PropertyDetailPage({
             lng={property.lng}
             city={property.city}
             state={property.state}
+            apiData={walkScoreData}
           />
         </section>
 
@@ -496,6 +508,7 @@ export default async function PropertyDetailPage({
             city={property.city}
             state={property.state}
             zip={property.zip}
+            apiData={schoolsData}
           />
         </section>
 
@@ -506,6 +519,7 @@ export default async function PropertyDetailPage({
             state={property.state}
             lat={property.lat}
             lng={property.lng}
+            censusData={censusData}
           />
         </section>
 

@@ -1,10 +1,20 @@
 "use client";
 
+interface WalkScoreApiData {
+  walk: number;
+  transit: number;
+  bike: number;
+  description?: string;
+  transitDescription?: string;
+  bikeDescription?: string;
+}
+
 interface WalkScoreProps {
   lat?: number | null;
   lng?: number | null;
   city: string;
   state: string;
+  apiData?: WalkScoreApiData | null;
 }
 
 function generateScores(lat: number, lng: number, city: string) {
@@ -126,10 +136,13 @@ function ScoreRing({
   );
 }
 
-export default function WalkScore({ lat, lng, city, state }: WalkScoreProps) {
+export default function WalkScore({ lat, lng, city, state, apiData }: WalkScoreProps) {
   if (!lat || !lng) return null;
 
-  const scores = generateScores(lat, lng, city);
+  const isLive = !!apiData;
+  const scores = apiData
+    ? { walk: apiData.walk, transit: apiData.transit, bike: apiData.bike }
+    : generateScores(lat, lng, city);
 
   return (
     <div className="rounded-xl border border-[#2a2a3a] bg-[#161620] p-6">
@@ -158,25 +171,26 @@ export default function WalkScore({ lat, lng, city, state }: WalkScoreProps) {
         <ScoreRing
           score={scores.walk}
           color={getWalkColor(scores.walk)}
-          label={getWalkLabel(scores.walk)}
+          label={isLive && apiData?.description ? apiData.description : getWalkLabel(scores.walk)}
           title="Walk Score"
         />
         <ScoreRing
           score={scores.transit}
           color={getTransitColor(scores.transit)}
-          label={getTransitLabel(scores.transit)}
+          label={isLive && apiData?.transitDescription ? apiData.transitDescription : getTransitLabel(scores.transit)}
           title="Transit Score"
         />
         <ScoreRing
           score={scores.bike}
           color={getBikeColor(scores.bike)}
-          label={getBikeLabel(scores.bike)}
+          label={isLive && apiData?.bikeDescription ? apiData.bikeDescription : getBikeLabel(scores.bike)}
           title="Bike Score"
         />
       </div>
       <p className="mt-6 text-center text-[10px] text-[#94a3b8]/60">
-        Scores are estimates based on location data. Connect Walk Score API for
-        live results.
+        {isLive
+          ? "Powered by Walk Score"
+          : "Estimated scores - Walk Score API connecting..."}
       </p>
     </div>
   );
