@@ -298,7 +298,7 @@ export default async function PropertyDetailPage({
 
             {/* Virtual Tour */}
             {property.virtual_tour_url && (
-              <section className="animate-fade-in">
+              <section className="animate-fade-in no-print">
                 <h2 className="mb-4 text-xl font-bold text-white">
                   <span className="flex items-center gap-2">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a962" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

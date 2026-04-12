@@ -261,7 +261,7 @@ function SearchClientInner({
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen bg-[#0a0a0f] pt-16">
       {/* -------- FILTER BAR -------- */}
       <div className="bg-[#1c1c2e] border-b border-[#2a2a3a] px-4 py-3">
         <div className="max-w-[1800px] mx-auto space-y-3">
