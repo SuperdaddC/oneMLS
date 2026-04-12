@@ -19,6 +19,10 @@ interface Filters {
   beds?: number;
   baths?: number;
   propertyType?: string;
+  minYear?: number;
+  maxYear?: number;
+  minLot?: number;
+  openHouseOnly?: boolean;
   sort?: string;
   page?: number;
   limit?: number;
@@ -88,6 +92,25 @@ const SORT_OPTIONS = [
   { label: "Oldest", value: "oldest" },
 ];
 
+const YEAR_PRESETS = [
+  { label: "Any", value: "" },
+  { label: "2020+", value: "2020" },
+  { label: "2010+", value: "2010" },
+  { label: "2000+", value: "2000" },
+  { label: "1990+", value: "1990" },
+  { label: "1980+", value: "1980" },
+  { label: "Before 1980", value: "1979" },
+];
+
+const LOT_SIZE_PRESETS = [
+  { label: "Any", value: "" },
+  { label: "2,000+ sqft", value: "2000" },
+  { label: "5,000+ sqft", value: "5000" },
+  { label: "1/4 acre+", value: "10890" },
+  { label: "1/2 acre+", value: "21780" },
+  { label: "1 acre+", value: "43560" },
+];
+
 /* ---------- dynamic map (ssr:false) ---------- */
 const SearchMap = dynamic(() => import("./SearchMap"), { ssr: false });
 
@@ -101,6 +124,8 @@ function SearchClientInner({
   const searchParams = useSearchParams();
 
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
+  const hasSecondaryFilters = !!(searchParams.get("minYear") || searchParams.get("maxYear") || searchParams.get("minLot") || searchParams.get("openHouses"));
+  const [showMoreFilters, setShowMoreFilters] = useState(hasSecondaryFilters);
   const [searchInput, setSearchInput] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -123,6 +148,10 @@ function SearchClientInner({
   const beds = searchParams.get("beds") ?? "";
   const baths = searchParams.get("baths") ?? "";
   const propertyType = searchParams.get("type") ?? "";
+  const minYear = searchParams.get("minYear") ?? "";
+  const maxYear = searchParams.get("maxYear") ?? "";
+  const minLot = searchParams.get("minLot") ?? "";
+  const openHouses = searchParams.get("openHouses") ?? "";
   const sort = searchParams.get("sort") ?? initialFilters.sort ?? "newest";
   const page = Number(searchParams.get("page") ?? initialFilters.page ?? 1);
 
@@ -156,7 +185,7 @@ function SearchClientInner({
   const total = initialTotal;
 
   /* check if search has active filters */
-  const hasActiveFilters = !!(query || stateParam || minPrice || maxPrice || beds || baths || propertyType);
+  const hasActiveFilters = !!(query || stateParam || minPrice || maxPrice || beds || baths || propertyType || minYear || maxYear || minLot || openHouses);
 
   /* generate a default search name from current filters */
   const generateSearchName = useCallback(() => {
@@ -176,8 +205,15 @@ function SearchClientInner({
       const t = PROPERTY_TYPES.find((pt) => pt.value === propertyType);
       if (t) parts.push(t.label);
     }
+    if (minYear) parts.push(`Built ${minYear}+`);
+    if (maxYear) parts.push(`Built before ${maxYear}`);
+    if (minLot) {
+      const l = LOT_SIZE_PRESETS.find((ls) => ls.value === minLot);
+      if (l) parts.push(`Lot ${l.label}`);
+    }
+    if (openHouses === "true") parts.push("Open Houses");
     return parts.length > 0 ? parts.join(" - ") : "My Search";
-  }, [query, stateParam, minPrice, maxPrice, beds, baths, propertyType]);
+  }, [query, stateParam, minPrice, maxPrice, beds, baths, propertyType, minYear, maxYear, minLot, openHouses]);
 
   const handleSaveSearch = async () => {
     if (!user) return;
@@ -191,6 +227,10 @@ function SearchClientInner({
       ...(beds && { beds }),
       ...(baths && { baths }),
       ...(propertyType && { type: propertyType }),
+      ...(minYear && { minYear }),
+      ...(maxYear && { maxYear }),
+      ...(minLot && { minLot }),
+      ...(openHouses === "true" && { openHouses: "true" }),
       ...(sort !== "newest" && { sort }),
     };
     await supabase.from("saved_searches").insert({
@@ -409,6 +449,94 @@ function SearchClientInner({
               </select>
             </div>
           </div>
+
+          {/* More Filters toggle + Open Houses */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowMoreFilters((v) => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-[#2a2a3a] bg-[#161620] text-[#94a3b8] hover:border-[#c9a962] hover:text-white transition-colors"
+            >
+              <svg
+                className={`w-4 h-4 transition-transform ${showMoreFilters ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M19 9l-7 7-7-7" />
+              </svg>
+              More Filters
+              {hasSecondaryFilters && (
+                <span className="ml-1 w-2 h-2 rounded-full bg-[#c9a962] inline-block" />
+              )}
+            </button>
+            <button
+              onClick={() => pushFilters({ openHouses: openHouses === "true" ? "" : "true" })}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                openHouses === "true"
+                  ? "bg-[#c9a962] text-[#0a0a0f]"
+                  : "border border-[#2a2a3a] bg-[#161620] text-[#94a3b8] hover:border-[#c9a962]"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4" />
+              </svg>
+              Open Houses
+            </button>
+          </div>
+
+          {/* Row 3: Secondary filters (Year Built, Lot Size) */}
+          {showMoreFilters && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 items-end">
+              {/* Min Year */}
+              <div>
+                <label className="block text-xs text-[#94a3b8] mb-1">Min Year Built</label>
+                <select
+                  value={minYear}
+                  onChange={(e) => pushFilters({ minYear: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962] appearance-none cursor-pointer"
+                >
+                  {YEAR_PRESETS.map((y) => (
+                    <option key={`minyr-${y.value}`} value={y.value}>
+                      {y.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Max Year */}
+              <div>
+                <label className="block text-xs text-[#94a3b8] mb-1">Max Year Built</label>
+                <select
+                  value={maxYear}
+                  onChange={(e) => pushFilters({ maxYear: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962] appearance-none cursor-pointer"
+                >
+                  {YEAR_PRESETS.map((y) => (
+                    <option key={`maxyr-${y.value}`} value={y.value}>
+                      {y.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Lot Size */}
+              <div>
+                <label className="block text-xs text-[#94a3b8] mb-1">Lot Size</label>
+                <select
+                  value={minLot}
+                  onChange={(e) => pushFilters({ minLot: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#161620] border border-[#2a2a3a] rounded-lg text-white text-sm focus:outline-none focus:border-[#c9a962] appearance-none cursor-pointer"
+                >
+                  {LOT_SIZE_PRESETS.map((l) => (
+                    <option key={`lot-${l.value}`} value={l.value}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -23,15 +23,38 @@ export async function searchProperties(filters: {
   propertyType?: string;
   state?: string;
   city?: string;
+  minYear?: number;
+  maxYear?: number;
+  minLot?: number;
+  openHouseOnly?: boolean;
   sort?: string;
   page?: number;
   limit?: number;
 }) {
   const supabase = await createServerSupabaseClient();
+
+  // If open house filter is active, fetch qualifying property IDs first
+  let openHousePropertyIds: string[] | null = null;
+  if (filters.openHouseOnly) {
+    const { data: ohIds } = await supabase
+      .from("open_houses")
+      .select("property_id")
+      .eq("status", "scheduled")
+      .gte("event_date", new Date().toISOString().split("T")[0]);
+    if (!ohIds || ohIds.length === 0) {
+      return { properties: [], total: 0, error: null };
+    }
+    openHousePropertyIds = ohIds.map((o: { property_id: string }) => o.property_id);
+  }
+
   let q = supabase
     .from("properties")
     .select("*, owner:profiles!owner_id(first_name, last_name, phone, email, brokerage_name, avatar_url)", { count: "exact" })
     .eq("status", "active");
+
+  if (openHousePropertyIds) {
+    q = q.in("id", openHousePropertyIds);
+  }
 
   if (filters.query) {
     q = q.or(`address.ilike.%${filters.query}%,city.ilike.%${filters.query}%,zip.ilike.%${filters.query}%,mls_id.ilike.%${filters.query}%`);
@@ -45,6 +68,9 @@ export async function searchProperties(filters: {
   if (filters.propertyType) q = q.eq("property_type", filters.propertyType);
   if (filters.state) q = q.eq("state", filters.state);
   if (filters.city) q = q.ilike("city", `%${filters.city}%`);
+  if (filters.minYear) q = q.gte("year_built", filters.minYear);
+  if (filters.maxYear) q = q.lte("year_built", filters.maxYear);
+  if (filters.minLot) q = q.gte("lot_size", filters.minLot);
 
   // Sort
   const sortField = filters.sort === "price_asc" ? "price" : filters.sort === "price_desc" ? "price" : filters.sort === "newest" ? "listing_date" : "listing_date";
