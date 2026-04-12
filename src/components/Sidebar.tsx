@@ -121,6 +121,13 @@ const BookIcon = () => (
   </svg>
 );
 
+const TrendIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 14L7 9L10 12L16 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12 5H16V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const BarChartIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="2" y="10" width="3" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
@@ -172,6 +179,22 @@ const SavedSearchIcon = () => (
   </svg>
 );
 
+const FolderIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 4C2 3.44772 2.44772 3 3 3H7L9 5H15C15.5523 5 16 5.44772 16 6V14C16 14.5523 15.5523 15 15 15H3C2.44772 15 2 14.5523 2 14V4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+  </svg>
+);
+
+const PaletteIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M9 2C5.13 2 2 5.13 2 9C2 12.87 5.13 16 9 16C9.55 16 10 15.55 10 15C10 14.76 9.89 14.55 9.73 14.39C9.57 14.23 9.46 14.01 9.46 13.76C9.46 13.21 9.91 12.76 10.46 12.76H11.76C14.1 12.76 16 10.86 16 8.52C16 4.92 12.87 2 9 2Z" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="5.5" cy="8.5" r="1" fill="currentColor" />
+    <circle cx="7.5" cy="5.5" r="1" fill="currentColor" />
+    <circle cx="10.5" cy="5.5" r="1" fill="currentColor" />
+    <circle cx="13" cy="8.5" r="1" fill="currentColor" />
+  </svg>
+);
+
 const HeartIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -186,6 +209,7 @@ const sections: NavSection[] = [
       { label: "My Listings", href: "/my-listings", icon: <HomeIcon />, badge: "STATUS_COUNTS", badgeType: "status" as const },
       { label: "Saved", href: "/saved", icon: <HeartIcon />, badge: "SAVED_COUNT", badgeType: "count" as const },
       { label: "Saved Searches", href: "/saved-searches", icon: <SavedSearchIcon /> },
+      { label: "Collections", href: "/collections", icon: <FolderIcon /> },
       { label: "Open Houses", href: "/open-houses", icon: <CalendarClockIcon />, badge: "OPEN_HOUSE_COUNT", badgeType: "count" as const },
       { label: "Showings", href: "/showings", icon: <CalendarIcon />, badge: "3", badgeType: "count" },
       { label: "Messages", href: "/messages", icon: <ChatIcon />, badge: "2", badgeType: "count" },
@@ -195,6 +219,7 @@ const sections: NavSection[] = [
     title: "RESOURCES",
     items: [
       { label: "Analytics", href: "/analytics", icon: <BarChartIcon /> },
+      { label: "Market Insights", href: "/market-insights", icon: <TrendIcon /> },
       { label: "CMA", href: "/cma", icon: <ChartIcon /> },
       { label: "E Contracts", href: "/e-contracts", icon: <DocumentIcon /> },
       { label: "Marketing Materials", href: "/marketing-materials", icon: <MegaphoneIcon /> },
@@ -227,6 +252,7 @@ const sections: NavSection[] = [
 ];
 
 const accountItems: NavItem[] = [
+  { label: "Brand Kit", href: "/brand-kit", icon: <PaletteIcon /> },
   { label: "Profile", href: "/profile", icon: <UserIcon /> },
   { label: "Help Center", href: "#", icon: <HelpIcon /> },
   { label: "Logout", href: "/login", icon: <LogoutIcon /> },

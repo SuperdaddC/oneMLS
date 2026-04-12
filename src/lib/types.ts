@@ -202,3 +202,40 @@ export interface NotificationPreferences {
   email_marketing_tips: boolean
   push_enabled: boolean
 }
+
+export interface Collection {
+  id: string
+  agent_id: string
+  name: string
+  description: string | null
+  client_name: string | null
+  client_email: string | null
+  share_token: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CollectionItem {
+  id: string
+  collection_id: string
+  property_id: string
+  agent_notes: string | null
+  position: number
+  created_at: string
+  property?: Property
+}
+
+export interface BrandKit {
+  user_id: string
+  primary_color: string
+  secondary_color: string
+  logo_url: string | null
+  tagline: string | null
+  website_url: string | null
+  social_instagram: string | null
+  social_facebook: string | null
+  social_linkedin: string | null
+  social_twitter: string | null
+  created_at: string
+  updated_at: string
+}

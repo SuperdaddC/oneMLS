@@ -39,6 +39,7 @@ interface FormData {
   description: string;
   features: string;
   photos: string[];
+  virtual_tour_url: string;
   price: string;
   commission_rate: string;
   open_house_enabled: boolean;
@@ -63,6 +64,7 @@ const initialForm: FormData = {
   description: "",
   features: "",
   photos: [],
+  virtual_tour_url: "",
   price: "",
   commission_rate: "",
   open_house_enabled: false,
@@ -164,6 +166,7 @@ export default function CreateListingPage() {
       description,
       features: featuresArray,
       photos: form.photos,
+      virtual_tour_url: form.virtual_tour_url || null,
       price: form.price ? parseFloat(form.price) : 0,
       commission_rate: form.commission_rate ? parseFloat(form.commission_rate) : null,
     };
@@ -592,6 +595,22 @@ export default function CreateListingPage() {
               <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP up to 10MB each</p>
             </div>
 
+            {/* Video Walkthrough */}
+            <div className="border-t border-gray-700 pt-4 mt-4">
+              <h3 className="text-md font-semibold text-white mb-3">Video Walkthrough</h3>
+              <div>
+                <label className={labelClass}>Video Walkthrough URL</label>
+                <input
+                  type="url"
+                  value={form.virtual_tour_url}
+                  onChange={(e) => update("virtual_tour_url", e.target.value)}
+                  placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
+                  className={inputClass}
+                />
+                <p className="text-xs text-gray-500 mt-1">Paste a YouTube, Vimeo, or video URL</p>
+              </div>
+            </div>
+
             {/* Upload progress / count */}
             {!uploading && uploadProgress && (
               <p className="text-sm text-[#c9a962]">{uploadProgress}</p>
@@ -801,6 +820,14 @@ export default function CreateListingPage() {
                 )}
               </div>
             </div>
+
+            {/* Video Walkthrough */}
+            {form.virtual_tour_url && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-[#c9a962] uppercase tracking-wider">Video Walkthrough</h3>
+                <p className="text-gray-300">{form.virtual_tour_url}</p>
+              </div>
+            )}
 
             {/* Open House */}
             {form.open_house_enabled && form.open_house_date && (

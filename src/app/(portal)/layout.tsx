@@ -22,6 +22,7 @@ const pageTitles: Record<string, string> = {
   "/analytics": "Listing Analytics",
   "/notifications": "Notifications",
   "/notifications/preferences": "Notification Preferences",
+  "/market-insights": "Market Insights",
 };
 
 export default function PortalLayout({

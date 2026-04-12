@@ -42,7 +42,10 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/open-houses') ||
     request.nextUrl.pathname.startsWith('/analytics') ||
     request.nextUrl.pathname.startsWith('/notifications') ||
-    request.nextUrl.pathname.startsWith('/saved-searches')
+    request.nextUrl.pathname.startsWith('/saved-searches') ||
+    request.nextUrl.pathname.startsWith('/collections') ||
+    request.nextUrl.pathname.startsWith('/brand-kit') ||
+    request.nextUrl.pathname.startsWith('/market-insights')
 
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
